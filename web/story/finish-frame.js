@@ -18,12 +18,14 @@ export function frameFinish(canvas){
       mini.filter='none';mini.drawImage(canvas,0,0,sw,sh);
       if(focus&&dof.amount){
         // A soft focus window follows the projected target at any lens distance.
-        ctx.save();ctx.beginPath();ctx.rect(0,0,w,h);
-        ctx.ellipse(focus.x*w,focus.y*h,focus.r*h*.6,focus.r*h,0,0,2*Math.PI,true);ctx.clip('evenodd');
-        ctx.filter='blur('+Math.max(.5,h*.004*dof.amount)+'px)';ctx.globalAlpha=dof.amount;ctx.drawImage(scratch,0,0,w,h);ctx.restore();
+        const radius=Math.max(1,focus.r*sh),x=focus.x*sw,y=focus.y*sh;
+        const mask=mini.createRadialGradient(x,y,radius*.35,x,y,radius*1.65);
+        mask.addColorStop(0,'black');mask.addColorStop(1,'transparent');
+        mini.save();mini.globalCompositeOperation='destination-out';mini.fillStyle=mask;mini.fillRect(0,0,sw,sh);mini.restore();
+        ctx.save();ctx.filter='blur('+Math.max(.5,h*.004*dof.amount)+'px)';ctx.globalAlpha=dof.amount;ctx.drawImage(scratch,0,0,w,h);ctx.restore();
       }
       if(quality!=='Low'){
-        mini.filter='contrast(240%) brightness(75%)';mini.drawImage(source,0,0,sw,sh);
+        mini.clearRect(0,0,sw,sh);mini.filter='contrast(240%) brightness(75%)';mini.drawImage(source,0,0,sw,sh);
         ctx.save();ctx.filter='blur('+Math.max(1,h*.009)+'px)';ctx.globalCompositeOperation='screen';ctx.globalAlpha=.13;ctx.drawImage(scratch,0,0,w,h);ctx.restore();
       }
     }

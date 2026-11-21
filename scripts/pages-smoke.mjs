@@ -98,6 +98,22 @@ try {
     assert.ok(await canvas.screenshot().then(buffer=>buffer.length > 1024), 'Sample canvas is blank');
     assert.ok(await page.locator('#story-errors').isHidden(), await page.locator('#story-error').textContent());
   });
+  await check('Pick coordinates, capture the camera and copy the complete reference',async()=>{
+    await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.copiedDiagnostic=text}}}));
+    await page.locator('#tools-panel summary').tap();
+    const film=page.locator('#story-film'),bounds=await film.boundingBox();
+    await film.tap({position:{x:Math.floor(bounds.width*.5),y:Math.floor(bounds.height*.82)}});
+    assert.match(await page.locator('#tools-position').textContent(),/nearest prop:/);
+    await page.locator('#tools-up').tap();await page.locator('#tools-shot').tap();
+    assert.match(await page.evaluate(()=>window.copiedDiagnostic),/^s.cam\(0, "static",/);
+    await nav.getByRole('link',{name:'Cheatsheet',exact:true}).tap();
+    await page.locator('#cheatsheet-copy').tap();
+    assert.ok(await page.evaluate(async()=>{
+      const text=window.copiedDiagnostic,rows=await(await fetch('./library/catalog.json')).json();
+      return text===await(await fetch(document.querySelector('#cheatsheet-file').href)).text()
+        &&rows.every(i=>text.includes('| '+i.name+' | '+i.type+' | '+(i.options||'—')+' |'));
+    }));
+  });
   assert.equal(errors.length, 0, errors.join('\n'));
   console.log(`${checks.length} checks passed at ${base}; no console errors, failed requests or script MIME errors.`);
 } finally {

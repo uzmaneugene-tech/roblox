@@ -31,6 +31,7 @@ const PI = Math.PI;
 function drawFace(x, name, mouth=0, blink=false) {
   x.lineCap = 'round'; x.lineWidth = 13; x.strokeStyle = x.fillStyle = '#111';
   const eye = (cx, cy, rx, ry) => {
+    if(blink){x.beginPath();x.moveTo(cx-rx,cy);x.lineTo(cx+rx,cy);x.stroke();return;}
     x.fillStyle = '#111'; x.beginPath(); x.ellipse(cx, cy, rx, ry, 0, 0, 7); x.fill();
     x.fillStyle = '#fff'; x.beginPath(); x.arc(cx + rx * .3, cy - ry * .35, rx * .3, 0, 7); x.fill();
     x.fillStyle = '#111';
@@ -52,7 +53,7 @@ function drawFace(x, name, mouth=0, blink=false) {
     x.ellipse(128,186,20+mouth*3,6+mouth*6,0,0,2*PI);x.fill();
     x.fillStyle='#e78177';x.beginPath();x.ellipse(128,190+mouth*3,10+mouth*2,3+mouth,0,0,2*PI);x.fill();
   }
-  if(blink){
+  if(blink&&name==='shouting'){
     x.clearRect(45,99,166,53);
     if(name==='happy'||name==='shocked')x.clearRect(45,70,166,31);
     x.strokeStyle='#111';x.lineWidth=11;line(72,115,102,115);line(154,115,184,115);
