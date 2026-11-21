@@ -58,7 +58,8 @@ export function softwarePreview(T, canvas) {
       if(!mesh.isInstancedMesh){drawList.push(mesh);return;}
       for(let i=0;i<mesh.count;i++){
         const matrix=new T.Matrix4();mesh.getMatrixAt(i,matrix);
-        drawList.push({geometry:mesh.geometry,material:mesh.material,matrixWorld:matrix.premultiply(mesh.matrixWorld)});
+        const color=mesh.instanceColor?new T.Color().fromBufferAttribute(mesh.instanceColor,i):null;
+        drawList.push({geometry:mesh.geometry,material:mesh.material,instanceTint:color,matrixWorld:matrix.premultiply(mesh.matrixWorld)});
       } });
     if (world) drawList.sort((a,b) => Number(Boolean(a.material.map)) - Number(Boolean(b.material.map)));
     drawList.forEach(mesh => {
@@ -77,7 +78,7 @@ export function softwarePreview(T, canvas) {
             warm += power / (275 + 12 * d);
           }
           p.push(Math.min(.52, warm),
-            Math.max(0, Math.min(.55, (camera.userData.focus.clone().sub(vertex).dot(eye) - 11) / 105)));
+            Math.max(0, Math.min(.55, world.fogNear===undefined?(camera.userData.focus.clone().sub(vertex).dot(eye) - 11) / 105:(camera.position.clone().sub(vertex).dot(eye)-world.fogNear)/(world.fogFar-world.fogNear))));
         }
         if (perspective) {
           const view = vertex.clone().applyMatrix4(camera.matrixWorldInverse);
@@ -98,7 +99,7 @@ export function softwarePreview(T, canvas) {
           textures.set(texture, pixels);
         }
       }
-      const color = mesh.material.color.getHex();
+      const color = (mesh.instanceTint??mesh.material.color).getHex();
       const index = mesh.geometry.index;
       const count = index ? index.count : position.count;
       for (let start = 0; start < count; start += 3) {

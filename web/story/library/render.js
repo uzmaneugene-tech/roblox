@@ -2,8 +2,8 @@ import {T,panel} from '../world/mesh.js';
 import {RoundedBoxGeometry} from '../vendor/rounded-box.js';
 
 // Build unit meshes once per scene; transforms and materials are shared by instances.
-export function buildLibrary(root,nodes,crowds,time){
-  const geo=new Map(), mats=new Map(), textures=[], batches=new Map(), parents=[], solids=[], actors=[], updates=[];
+export function buildLibrary(root,nodes,crowds,time,dynamic=false){
+  const glowLights=[],geo=new Map(), mats=new Map(), textures=[], batches=new Map(), parents=[], solids=[], actors=[], updates=[];
   const geometry=k=>{
     if(!geo.has(k)){
       let g;
@@ -17,7 +17,7 @@ export function buildLibrary(root,nodes,crowds,time){
     }return geo.get(k);
   };
   function mat(o,back=false){
-    const color=back?'#263246':o.color??'#58b4a6', glow=!back&&time!=='day'&&o.emissive, key=[color,o.rough,glow,back].join('/');
+    const color=back?'#263246':o.color??'#58b4a6', glow=!back&&(dynamic||time!=='day')&&o.emissive, key=[color,o.rough,glow,back].join('/');
     if(!mats.has(key))mats.set(key,back?new T.MeshBasicMaterial({color,side:T.BackSide}):
       new T.MeshStandardMaterial({color,roughness:o.rough??.73,emissive:glow||0,emissiveIntensity:time==='night'?1.3:.7,side:T.DoubleSide}));
     return mats.get(key);
@@ -36,7 +36,7 @@ export function buildLibrary(root,nodes,crowds,time){
     const owner=extra.solid?i:parents[parent]?.owner;
     parents.push({matrix,owner,style:styleOpts});
     if(kind==='group'){if('solid' in extra)picks.push({name:nodes[i].name,point:new T.Vector3().setFromMatrixPosition(matrix)});continue;}
-    if(kind==='light'){if(time!=='day'&&lights++<4){const l=new T.PointLight(extra.color,extra.intensity,extra.distance);l.position.setFromMatrixPosition(matrix);root.add(l);}continue;}
+    if(kind==='light'){if((dynamic||time!=='day')&&lights++<4){const l=new T.PointLight(extra.color,extra.intensity,extra.distance);l.position.setFromMatrixPosition(matrix);root.add(l);glowLights.push([l,extra.intensity]);}continue;}
     if(kind==='text'){const mesh=panel(root,1,1,0,0,0,extra.label,o.color??'#243a50');matrix.decompose(mesh.position,mesh.quaternion,mesh.scale);textures.push(mesh);continue;}
     const ground=kind==='ground',g=geometry(ground?'box':kind);
     const palette={grass:'#71ae76',asphalt:'#49505e',sand:'#e4c48a',concrete:'#a5b4bd',water:'#45add2'};
@@ -99,5 +99,5 @@ export function buildLibrary(root,nodes,crowds,time){
       updates.push(t=>{for(const [i,fn] of moving){fn(t,temp);mesh.setMatrixAt(i,temp);}mesh.instanceMatrix.needsUpdate=true;});}
   }
   for(const b of boundaries.values())solids.push({min:b.min.toArray(),max:b.max.toArray()});
-  return {picks,bounds,solids,actors,update:t=>updates.forEach(f=>f(t)),dispose(){meshes.forEach(m=>m.dispose());geo.forEach(g=>g.dispose());mats.forEach(m=>m.dispose());textures.forEach(m=>{m.geometry.dispose();m.material.map.dispose();m.material.dispose();});}};
+  return {picks,bounds,solids,actors,lightLevel(level){mats.forEach(m=>{if(m.emissive)m.emissiveIntensity=level*1.3;});for(const [l,power] of glowLights)l.intensity=power*level;},update:t=>updates.forEach(f=>f(t)),dispose(){meshes.forEach(m=>m.dispose());geo.forEach(g=>g.dispose());mats.forEach(m=>m.dispose());textures.forEach(m=>{m.geometry.dispose();m.material.map.dispose();m.material.dispose();});}};
 }

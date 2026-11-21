@@ -16,6 +16,7 @@
       <div class="actions story-actions">
         <button id="story-run" class="primary">Run</button>
         <button id="story-sample">Load sample</button>
+        <button id="story-phase-two">Load sound and effects sample</button>
         <a href="#cheatsheet">Story Code reference</a>
         <button id="story-export">Export .js</button>
         <label class="button">Import .js<input type="file" id="story-import" accept=".js,text/javascript"></label>
@@ -23,6 +24,14 @@
       <label for="story-history">Code history</label>
       <select id="story-history"><option value="">Recent versions</option></select>
       <p id="story-status" role="status"></p>
+      <details class="panel" id="story-audio">
+        <summary>Sound mixer</summary>
+        <label><input id="story-sound" type="checkbox" checked> Sound on</label>
+        <label>Effects <input id="story-volume-sfx" type="range" min="0" max="1" step=".05" value="1"></label>
+        <label>Ambience <input id="story-volume-ambience" type="range" min="0" max="1" step=".05" value="1"></label>
+        <label>Music <input id="story-volume-music" type="range" min="0" max="1" step=".05" value="1"></label>
+        <label>Voiceover (export) <input id="story-volume-voice" type="range" min="0" max="1" step=".05" value="1"></label>
+      </details>
       <div id="story-errors" hidden>
         <pre id="story-error" role="alert"></pre>
         <button id="story-copy-error">Copy error</button>
@@ -41,7 +50,7 @@
       <label>Resolution <select id="export-size"><option value="1920">1080 × 1920</option><option value="1280">720 × 1280</option></select></label>
       <label>Optional voiceover (MP3, WAV, M4A) <input id="export-voice" type="file" accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/mp4"></label>
       <label>Voiceover starts at (seconds) <input id="export-offset" type="number" min="0" step="0.01" value="0"></label>
-      <label class="export-effects"><input id="export-effects" type="checkbox"> Include placeholder sound effects</label>
+      <label class="export-effects"><input id="export-effects" type="checkbox" checked> Include effects, ambience and music</label>
       <p>Portrait, 30 fps. Exports on this device.</p>
       <div class="actions story-actions">
         <button id="export-start" class="primary">Export video</button>

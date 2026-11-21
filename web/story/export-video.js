@@ -13,7 +13,7 @@ function budget(bytes) {
   if(bytes>MAX_OUTPUT_BYTES) throw new Error('The video exceeded this browser’s memory budget. Choose 720p or split the story.');
 }
 
-async function encodeFrames(lib, mode, canvas, plan, audio, renderFrame, report, signal) {
+async function encodeFrames(lib, mode, canvas, plan, audio, renderFrame, report, signal, audioCodec) {
   const {Output,BufferTarget,CanvasSource,AudioBufferSource,Mp4OutputFormat,WebMOutputFormat}=lib;
   const isMp4=mode==='mp4', target=new BufferTarget();
   const output=new Output({format:isMp4?new Mp4OutputFormat({fastStart:false}):new WebMOutputFormat(),target});
@@ -23,7 +23,7 @@ async function encodeFrames(lib, mode, canvas, plan, audio, renderFrame, report,
     onEncodedPacket(packet){bytes+=packet.data.byteLength;encoded++;},
   });
   output.addVideoTrack(video,{frameRate:EXPORT_FPS});
-  const sound=audio&&new AudioBufferSource({codec:isMp4?'aac':'opus',bitrate:96000});
+  const sound=audio&&new AudioBufferSource({codec:audioCodec,bitrate:96000});
   if(sound)output.addAudioTrack(sound);
   const stop=()=>{ output.cancel().catch(()=>{}); };
   signal.addEventListener('abort',stop,{once:true});
@@ -121,11 +121,17 @@ export async function exportStoryVideo(timeline, {height, file, offset=0, effect
     const audio=await prepareAudio(timeline,plan.duration,file,offset,effects,signal);
     const capabilities={width:plan.width,height,bitrate:plan.bitrate,frameRate:EXPORT_FPS};
     const sound={sampleRate:48000,numberOfChannels:1,bitrate:96000};
-    let mode='webm-realtime';
-    if(globalThis.VideoEncoder && await lib.canEncodeVideo('avc',capabilities)
-      && (!audio || await lib.canEncodeAudio('aac',sound)))mode='mp4';
-    else if(globalThis.VideoEncoder && await lib.canEncodeVideo('vp8',capabilities)
-      && (!audio || await lib.canEncodeAudio('opus',sound)))mode='webm';
+    let mode='webm-realtime', audioCodec='aac';
+    if(globalThis.VideoEncoder){
+      const avc=await lib.canEncodeVideo('avc',capabilities);
+      const aac=audio&&avc?await lib.canEncodeAudio('aac',sound):false;
+      const opus=audio&&!aac?await lib.canEncodeAudio('opus',sound):false;
+      const mp4Opus=opus&&document.createElement('video').canPlayType('video/mp4; codecs="avc1.42001f,opus"');
+      if(avc&&(!audio||aac||mp4Opus)){mode='mp4';audioCodec=aac?'aac':'opus';}
+      else if((!audio||opus||await lib.canEncodeAudio('opus',sound))&&await lib.canEncodeVideo('vp8',capabilities)){
+        mode='webm';audioCodec='opus';
+      }
+    }
     signal.throwIfAborted();
     const renderCanvas=surface(plan.width,height), canvas=surface(plan.width,height);
     const ctx=canvas.getContext('2d',{alpha:false});
@@ -140,7 +146,7 @@ export async function exportStoryVideo(timeline, {height, file, offset=0, effect
     report(0,mode);
     const blob=mode==='webm-realtime'
       ? await recordFrames(canvas,plan,audio,renderFrame,report,signal,audioContext)
-      : await encodeFrames(lib,mode,canvas,plan,audio,renderFrame,report,signal);
+      : await encodeFrames(lib,mode,canvas,plan,audio,renderFrame,report,signal,audioCodec);
     signal.throwIfAborted();
     if(!blob.size)throw new Error('The browser produced an empty video. Try 720p or another browser.');
     return {blob,filename:exportName(timeline.title,mode==='mp4'?'mp4':'webm'),frames:plan.frames,

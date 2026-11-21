@@ -1,3 +1,6 @@
+import {sceneEffects,timeWeights,frameEffects} from './story-effects.js';
+import {compileItems} from './action-poses.js';
+import {heldProp} from './held-props.js';
 import { T, batch, shadow } from './world/mesh.js';
 import { addProp } from './world/props.js';
 import { locationRegistry } from './world/locations/index.js';
@@ -46,7 +49,8 @@ export function createStoryView(canvas, caption, fixedSize) {
     for(const root of stage.owned)dispose(root,false);
     for(const ball of stage.balls.values())ball.traverse(node=>{if(node.geometry?.type==='TorusGeometry')node.geometry.dispose()});
     if(stage.contacts){stage.contacts.dispose();dispose(stage.contacts,false);}
-    stage.library.dispose();
+    stage.library.dispose();stage.effects.dispose();
+    for(const m of stage.dynamicMaterials.keys())m.dispose();
     scene.remove(stage.root);
     dispose(stage.set,true);
     stage=null;
@@ -54,7 +58,7 @@ export function createStoryView(canvas, caption, fixedSize) {
   function load(data) {
     clear();
     current=data;
-    const preset=presets[data.time], ctx={dark:data.time!=='day',night:data.time==='night',glows:0};
+    const preset=presets[data.time], dynamic=Boolean(data.timeChanges),ctx={dark:dynamic||data.time!=='day',night:data.time==='night',glows:0};
     const root=new T.Group(), set=new T.Group(), live=new T.Group();
     root.add(set,live);
     const layout=locationRegistry[data.location]?.(set,ctx)??{focus:[0,0,0]};
@@ -65,7 +69,7 @@ export function createStoryView(canvas, caption, fixedSize) {
       if(prop.type==='hoop'){model.updateMatrixWorld(true);hoops.push([...model.localToWorld(new T.Vector3(0,4.38,.76))]);}
     }
     const libraryRoot=new T.Group();root.add(libraryRoot);
-    const library=buildLibrary(libraryRoot,data.nodes??[],data.crowds??[],data.time);
+    const library=buildLibrary(libraryRoot,data.nodes??[],data.crowds??[],data.time,dynamic);
     const picks=[...library.picks],solids=[...library.solids];set.updateMatrixWorld(true);
     set.traverse(node=>{if(node.userData.prop)picks.push({name:node.userData.prop,point:node.getWorldPosition(new T.Vector3())});if(node.userData.solid){const box=new T.Box3().setFromObject(node);solids.push({min:box.min.toArray(),max:box.max.toArray()});}});
     // Share one radial texture and draw call across static contact patches.
@@ -79,15 +83,29 @@ export function createStoryView(canvas, caption, fixedSize) {
         const r=/house|tower|shop|apartment/.test(name)?8:/car|bench|bus/.test(name)?4:2;
         dummy.scale.set(r,r*.75,1);dummy.updateMatrix();contacts.setMatrixAt(i,dummy.matrix);});root.add(contacts);
     }
+    const dynamicMaterials=new Map(),pointLights=[];
     batch(set);
+    if(dynamic){
+      const copies=new Map();
+      set.traverse(item=>{
+        if(item.isPointLight)pointLights.push([item,item.intensity]);
+        if(!item.material?.userData.windowGlow)return;
+        const original=item.material;
+        if(!copies.has(original)){const copy=original.clone();copies.set(original,copy);dynamicMaterials.set(copy,original.color.clone());}
+        item.material=copies.get(original);
+      });
+    }
     const owned=[], models=new Map(), tracks=new Map(), balls=new Map();
     const placed=new Map(data.placements.map(p=>[p.char,p.position]));
+    const itemAt=compileItems(data.actions), items=new Map();
+    const effects=sceneEffects(root,data);
+    const eventsFor=id=>[...data.actions.filter(e=>e.char===id),...data.actions.filter(e=>e.arg===id&&e.action==='hug').map(e=>({...e,char:id,arg:e.char}))].sort((a,b)=>a.t-b.t);
     for(const [id,pos] of placed) {
       const spec=timeline.characters.find(c=>c.id===id);
       const model=buildAvatar(spec), pivot=new T.Group();
       pivot.add(model.group);live.add(pivot);owned.push(model.group);
-      const events=data.actions.filter(e=>e.char===id);
-      const track=compileMotion(pos,events,hoops);
+      const events=eventsFor(id);
+      const track=compileMotion(pos,events,hoops,placed);
       const baseShadow=new T.Group();shadow(baseShadow,0,0,3.8,2.25);live.add(baseShadow);owned.push(baseShadow);
       models.set(id,{model,pivot,baseShadow}); tracks.set(id,track);
       if(events.some(event=>event.action==='shoot_ball')){
@@ -107,7 +125,7 @@ export function createStoryView(canvas, caption, fixedSize) {
     scene.add(root);
     const face=new T.Quaternion(), inverse=new T.Quaternion(), halos=[];
     root.traverse(item=>{if(item.userData.halo)halos.push(item);});
-    stage={contacts,picks,root,library,set,live,owned,models,tracks,balls,director,halos,face,inverse};
+    stage={contacts,picks,root,library,set,live,owned,models,tracks,balls,director,halos,face,inverse,effects,targetAt,items,itemAt,dynamicMaterials,pointLights,blended:{exposure:[0,0,0],fog:[0,0,0]}};
     const overrides=data.light??{};
     key.color.set(typeof overrides.color==='string'?overrides.color:preset.key);
     key.intensity=Number.isFinite(overrides.intensity)?T.MathUtils.clamp(overrides.intensity,0,8):preset.power;
@@ -141,6 +159,7 @@ export function createStoryView(canvas, caption, fixedSize) {
     if(canvas.width!==rw||canvas.height!==rh){if(renderer)renderer.setSize(rw,rh,false);else{canvas.width=rw;canvas.height=rh;}}
     const characters=[];
     const t=active.localTime; stage.library.update(t);
+    for(const group of stage.items.values())group.visible=false;
     for(const [id, { model,pivot,baseShadow }] of stage.models) {
       const frame=stage.tracks.get(id)(t);
       pivot.position.set(frame.pos[0],frame.pos[1]+frame.low,frame.pos[2]);
@@ -151,6 +170,15 @@ export function createStoryView(canvas, caption, fixedSize) {
       const beat=faceBeat(id,t,current.captions,frame.face);
       model.setFace(frame.face,beat.mouth,beat.blink);
       characters.push({id,name:timeline.characters.find(c=>c.id===id).name,position:pivot.position.toArray(),action:current.actions.findLast(e=>e.char===id&&e.t<=t)?.action??'idle',face:frame.face,...beat});
+      const held=stage.itemAt(id,t);
+      if(held){
+        const key=id+':'+held;
+        if(!stage.items.has(key)){const group=heldProp(held);stage.items.set(key,group);stage.live.add(group);stage.owned.push(group);}
+        const group=stage.items.get(key),hand=model.parts.armR;
+        group.visible=true;
+        group.position.copy(hand.localToWorld(new T.Vector3(0,-1.75,.31)));
+        hand.getWorldQuaternion(group.quaternion);group.rotateX(Math.PI);
+      }
       baseShadow.position.set(frame.pos[0],frame.pos[1],frame.pos[2]);
       const ball=stage.balls.get(id);
       if(ball){ball.visible=Boolean(frame.ball);if(frame.ball)ball.position.set(frame.ball[0],frame.ball[1]-.34,frame.ball[2]);}
@@ -167,12 +195,45 @@ export function createStoryView(canvas, caption, fixedSize) {
     camera.position.fromArray(view.from);camera.userData.focus.fromArray(view.look);camera.lookAt(camera.userData.focus);
     camera.updateProjectionMatrix();camera.getWorldQuaternion(stage.face);
     for(const glow of stage.halos)glow.quaternion.copy(glow.parent.getWorldQuaternion(stage.inverse).invert()).multiply(stage.face);
+    const flash=stage.effects.update(t,quality,stage.targetAt,view.look);
+    const weights=current.timeChanges?timeWeights(current,t):null,overrides=current.light??{};
+    if(weights){
+      const list=Object.values(presets), blended=stage.blended;
+      const sum=f=>list.reduce((v,p,i)=>v+weights[i]*f(p,i),0);
+      key.color.set(overrides.color??'#000');fill.color.set('#000');
+      for(let i=0;i<list.length;i++)fill.color.add(new T.Color(list[i].fill).multiplyScalar(weights[i]));
+      if(!overrides.color){key.color.set('#000');for(let i=0;i<list.length;i++)key.color.add(new T.Color(list[i].key).multiplyScalar(weights[i]));}
+      key.intensity=overrides.intensity??sum(p=>p.power);
+      fill.intensity=overrides.ambient??(1.48-.73*weights[2]);
+      for(let i=0;i<3;i++){blended.exposure[i]=sum(p=>p.exposure[i]);blended.fog[i]=sum(p=>p.fog[i]);}
+      scene.userData.world=blended;
+      if(!current.fog?.color)scene.fog.color.setRGB(...blended.fog.map(c=>c/255),T.SRGBColorSpace);
+      const glow=.68*weights[1]+weights[2];
+      for(const halo of stage.halos)halo.material.opacity=glow;
+      for(const [m,color] of stage.dynamicMaterials)m.color.set('#83b1c4').lerp(color,glow);
+      for(const [light,power] of stage.pointLights)light.intensity=power*glow;
+      stage.library.lightLevel(glow);
+    }else key.intensity=overrides.intensity??presets[current.time].power;
+    if(current.weather==='fog'||current.weather==='storm'){
+      scene.fog.near=current.fog?.near??(current.weather==='fog'?5:12);
+      scene.fog.far=current.fog?.far??(current.weather==='fog'?36:59);
+    }
+    if(current.weather==='fog'||current.weather==='storm'){
+      scene.userData.world={...scene.userData.world,fogNear:scene.fog.near,fogFar:scene.fog.far};
+    }
+    key.intensity+=flash*2.1;
     if(renderer)renderer.render(scene,camera);else paint(scene,camera);
     const word=captionAt(active.scene.captions,t);
     if(finish){
       const target=stage.models.get(current.dof?.focus);let focus;
       if(target){const p=target.pivot.position.clone();p.y+=2.7;const d=p.distanceTo(camera.position);p.project(camera);focus={x:(p.x+1)/2,y:(1-p.y)/2,r:Math.min(2,2.9/(Math.max(.1,d)*2*Math.tan(view.fov*Math.PI/360)))};}
-      finish(canvas,{time:current.time,grade:current.grade,dof:current.dof,focus,quality,noise:settings.grain,t,word});
+      const overlays=frameEffects(current,t,active.elapsed);overlays.flash=flash;
+      overlays.bubbles=overlays.bubbles.flatMap(b=>{
+        const actor=stage.models.get(b.char);if(!actor)return [];
+        const p=actor.model.parts.head.getWorldPosition(new T.Vector3());p.y+=.86;p.project(camera);
+        return p.z>=-1&&p.z<1?[{...b,pixel:[(p.x+1)/2,(1-p.y)/2]}]:[];
+      });
+      finish(canvas,{weights,overlays,time:current.time,grade:current.grade,dof:current.dof,focus,quality,noise:settings.grain,t,word});
     }
     debug={title:timeline.title,scene:current.id,localTime:t,timelineTime:time,camera:{from:[...view.from],look:[...view.look],fov:view.fov},characters,quality};
     if(!fixedSize&&composite){slow=performance.now()-began>1000/timeline.fps?slow+1:0;if(slow>=4){auto=rank[Math.max(0,rank.indexOf(quality)-1)];slow=0;}}
@@ -194,7 +255,7 @@ export function createStoryView(canvas, caption, fixedSize) {
     pick(x,y){
       if(!stage)return null;
       const ray=new T.Raycaster();ray.setFromCamera(new T.Vector2(2*x-1,1-2*y),camera);
-      const hit=ray.intersectObject(stage.root,true).find(h=>h.object.visible&&h.object!==stage.contacts&&!h.object.userData.halo);
+      const hit=ray.intersectObject(stage.root,true).find(h=>h.object.visible&&h.object!==stage.contacts&&!h.object.userData.halo&&!h.object.userData.particle);
       const point=hit?.point??ray.ray.intersectPlane(new T.Plane(new T.Vector3(0,1,0),0),new T.Vector3());
       if(!point)return null;
       let best=Infinity,name=null;for(const p of stage.picks){const d=p.point.distanceToSquared(point);if(d<best){best=d;name=p.name;}}

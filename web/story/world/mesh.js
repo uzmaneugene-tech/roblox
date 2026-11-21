@@ -8,7 +8,8 @@ export function material(color, glow = false) {
   if (!materials.has(id)) materials.set(id, glow
     ? new T.MeshBasicMaterial({ color })
     : new T.MeshStandardMaterial({ color, roughness: .88 }));
-  return materials.get(id);
+  const value=materials.get(id);if(glow)value.userData.windowGlow=true;
+  return value;
 }
 export function mesh(parent, geometry, color, x, y, z, glow = false) {
   const item = new T.Mesh(geometry, material(color, glow));

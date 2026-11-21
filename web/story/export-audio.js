@@ -1,9 +1,11 @@
-const SAMPLE_RATE = 48000;
+import {audioRate as SAMPLE_RATE,hasSceneAudio,renderSceneAudio} from './sound.js';
 const MAX_UPLOAD = 30 * 1024 * 1024;
 
 export async function prepareAudio(timeline, duration, file, offset, effects, signal) {
-  const cues = effects ? timeline.scenes.flatMap(scene=>scene.sounds.map(cue=>({...cue, t:scene.start+cue.t}))) : [];
-  if ((!file || offset >= duration) && !cues.length) return null;
+  const gains=timeline.audioSettings??{};
+  const scenes=effects&&!gains.muted?timeline.scenes.filter(scene=>hasSceneAudio(scene,gains)):[];
+  if(gains.muted||gains.voice===0)file=null;
+  if ((!file || offset >= duration) && !scenes.length) return null;
   if (!Number.isFinite(offset)||offset<0) throw new Error('Voiceover offset must be a nonnegative number of seconds.');
   const mix = new AudioBuffer({length:Math.ceil(duration*SAMPLE_RATE),sampleRate:SAMPLE_RATE,numberOfChannels:1});
   const data = mix.getChannelData(0);
@@ -23,17 +25,15 @@ export async function prepareAudio(timeline, duration, file, offset, effects, si
     for(let i=0;i<Math.min(voice.length,data.length-start);i++) {
       let sample=0;
       for(const channel of channels)sample+=channel[i];
-      data[start+i]=sample*.86/channels.length;
+      data[start+i]=sample*.86*(gains.voice??1)/channels.length;
     }
   }
-  for (const {name,t} of cues) {
+  for(const scene of scenes){
     signal.throwIfAborted();
-    const id = [...name].reduce((n,ch)=>(n*31+ch.codePointAt(0))>>>0,0);
-    const hz=270+(id%490), start=Math.round(t*SAMPLE_RATE), length=Math.min(data.length-start,Math.floor(SAMPLE_RATE*.23));
-    for(let i=0;i<length;i++){
-      const p=i/length, a=Math.min(p*10,1)*(1-p)**2*.13;
-      data[start+i]=Math.max(-1,Math.min(1,data[start+i]+a*Math.sin(i/SAMPLE_RATE*hz*2*Math.PI)));
-    }
+    const start=Math.round(scene.start*SAMPLE_RATE);
+    const end=Math.round((scene.start+scene.duration)*SAMPLE_RATE);
+    renderSceneAudio(scene,data.subarray(start,end),SAMPLE_RATE,gains);
+    await new Promise(resolve=>setTimeout(resolve,0));
   }
   return mix;
 }

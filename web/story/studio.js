@@ -1,3 +1,5 @@
+import {previewSound} from './sound.js';
+import {phaseTwoSample} from './phase-two-sample.js';
 import {sceneTools} from './scene-tools.js';
 import {execute} from './execute.js';
 import { connectVideoExport } from './export-ui.js';
@@ -24,8 +26,11 @@ export function startStudio() {
   const code = $('code'), run = $('run'), errors = $('errors'), errorText = $('error');
   const status = message => { $('status').textContent = message; };
   let history = readHistory(), timeline, filmViewer, raf = null;
+  const audio=previewSound(), sound=$('sound');
+  const audioSettings=()=>({muted:!sound.checked,...Object.fromEntries(['sfx','ambience','music','voice'].map(key=>[key,Number($('volume-'+key).value)]))});
+  sound.onchange=()=>{if(sound.checked)audio.unlock();else audio.stop();};
   const tools=sceneTools(()=>filmViewer,stop,()=>errorText.textContent);
-  const updateExport=connectVideoExport({getTimeline:()=>timeline&&({...timeline,lookSettings:filmViewer?.lookSettings()??tools.settings()}),pauseStory:stop});
+  const updateExport=connectVideoExport({getTimeline:()=>timeline&&({...timeline,audioSettings:audioSettings(),lookSettings:filmViewer?.lookSettings()??tools.settings()}),pauseStory:stop});
   const scene = $('scene');
   const scrub = $('time'), play = $('play');
   // A paste can arrive while this tab’s module is still loading.
@@ -90,6 +95,7 @@ export function startStudio() {
     }
   };
   function stop() {
+    audio.stop();
     if (raf !== null) cancelAnimationFrame(raf);
     raf = null;
     play.textContent = 'Play';
@@ -105,6 +111,7 @@ export function startStudio() {
   scene.onchange = () => { stop(); seek(timeline.scenes.find(item => item.id === scene.value).start); };
   play.onclick = () => {
     if (raf !== null) return stop();
+    if(sound.checked)audio.unlock();
     const position = Number(scrub.value);
     const from = position >= timeline.duration ? 0 : position;
     const started = performance.now();
@@ -112,6 +119,7 @@ export function startStudio() {
     play.textContent = 'Pause';
     const frame = now => {
       const seconds = Math.min(timeline.duration, from + (now - started) / 1000);
+      audio.tick(locateScene(timeline,seconds),audioSettings());
       const frameId = Math.floor(seconds * timeline.fps);
       if (frameId !== lastFrame || seconds >= timeline.duration) {
         lastFrame=frameId;
@@ -124,6 +132,7 @@ export function startStudio() {
   };
   addEventListener('hashchange',()=>{if(location.hash!=='#story')stop()});
   run.onclick = async () => {
+    if(sound.checked)audio.unlock();
     const source = code.value;
     errors.hidden = true;
     stop();
@@ -142,7 +151,7 @@ export function startStudio() {
         showError(result.error);
         return;
       }
-      tools.reset();timeline = result.timeline;timeline.lookSettings=tools.settings();
+      audio.reset();tools.reset();timeline = result.timeline;timeline.lookSettings=tools.settings();
       updateExport(timeline);
       scene.replaceChildren(...timeline.scenes.map(s => new Option(s.id, s.id)));
       setPreviewCharacters(timeline.characters);
@@ -165,6 +174,7 @@ export function startStudio() {
       run.disabled = false;
     }
   };
+  $('phase-two').onclick=()=>{code.value=phaseTwoSample;saveDraft();errors.hidden=true;status('Sound and effects sample loaded. Press Run.');};
   $('sample').onclick = () => { code.value = example; saveDraft(); errors.hidden = true; status('Sample loaded. Press Run to preview it.'); };
   updateHistory();
 }
