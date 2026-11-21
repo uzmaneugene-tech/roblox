@@ -288,5 +288,45 @@
     "type": "animation",
     "name": "salute",
     "options": "duration"
+  },
+  {
+    "type": "prop",
+    "name": "phone",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "cup",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "letter",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "ball",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "money",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "flag",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "microphone",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "umbrella",
+    "options": "color"
   }
 ]

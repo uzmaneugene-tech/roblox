@@ -22,4 +22,8 @@ export const customItems=()=>transaction('readonly',s=>s.getAll());
 export const allItems=async()=>[...await builtins(),...await customItems()];
 export const saveItems=items=>transaction('readwrite',s=>{for(const item of items)s.put(item)});
 export const removeItem=name=>transaction('readwrite',s=>s.delete(name));
-export const sources=items=>items.map(({name,source})=>({name,source}));
+export const sources=items=>{
+  const unique=new Map();
+  for(const item of items)unique.set(item.name,item);
+  return [...unique.values()].map(({name,source})=>({name,source}));
+};

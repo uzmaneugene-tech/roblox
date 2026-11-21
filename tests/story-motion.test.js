@@ -2,14 +2,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { runStory } from '../web/story/sandbox.js';
 import { example } from '../web/story/example.js';
-import { actions, shots } from '../web/story/registry.js';
+import { originalActions, shots } from '../web/story/registry.js';
 import { compileMotion, captionAt } from '../web/story/motion.js';
 import { compileCamera } from '../web/story/shots.js';
 
-test('sample authors every action and shot exactly once through the sandbox', async () => {
+test('sample authors every original action and shot exactly once through the sandbox', async () => {
   const { timeline } = await runStory(example);
   const scene = timeline.scenes[0];
-  assert.deepEqual(scene.actions.map(e=>e.action).sort(), [...actions].sort());
+  assert.deepEqual(scene.actions.map(e=>e.action).sort(), [...originalActions].sort());
   assert.deepEqual(scene.cameras.map(e=>e.shot).sort(), [...shots].sort());
   assert.equal(scene.cameras[4].opts.cut, true);
   assert.equal(scene.captions[0].speed, 1);

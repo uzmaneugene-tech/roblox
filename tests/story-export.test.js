@@ -21,7 +21,7 @@ test('sandbox denies browser transports and static and dynamic imports', async (
 test('API validates unsupported actions, options and time with source locations', async () => {
   const prefix='const jin=character("Jin");\nscene("Court",{location:"basketball_court",time:"dusk",duration:2},s=>{\n';
   for (const [source,message] of [
-    ['s.do(0,jin,"dance")',/Valid values/],
+    ['s.do(0,jin,"run_up_wall")',/Valid values/],
     ['s.cam(0,"wide",{cut:"yes"})',/expected true or false/],
     ['s.say(1,jin,"Hello",{speed:0})',/Caption speed/],
     ['s.narrate(3,"Too late")',/Scene time/],

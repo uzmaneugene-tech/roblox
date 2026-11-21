@@ -1,3 +1,4 @@
+import {ambienceNames,musicNames,fxNames,transitions,weatherNames,heldItems,danceStyles,compileClock,clockAt,stormTimes} from './phase-two.js';
 import { actions, expressions, locations, props, shots, times } from './registry.js';
 
 import {shapeRecord,bodies,accessories} from './library/validate.js';
@@ -34,7 +35,7 @@ export function locateScene(timeline, seconds) {
   if (!timeline.scenes.length) return null;
   const time = Math.min(Math.max(seconds, 0), timeline.duration);
   const scene = timeline.scenes.find(s => time < s.start + s.duration) ?? timeline.scenes.at(-1);
-  return { scene, localTime: time - scene.start };
+  return {scene, elapsed:time-scene.start, localTime:clockAt(scene,time-scene.start)};
 }
 
 export function recorder() {
@@ -52,6 +53,11 @@ export function recorder() {
     for(const key of ['hair','skin'])if(opts[key]!==undefined)text(opts[key],key,80);
     if(opts.body!==undefined)choice(opts.body,'body',bodies);
     if(opts.accessories!==undefined){assert(Array.isArray(opts.accessories)&&opts.accessories.length<=12,'Expected up to 12 accessories');opts.accessories.forEach(a=>choice(a,'accessory',accessories));}
+  }
+  function transitionOptions(value,name){
+    if(typeof value==='string')return {name:choice(value,name,transitions),duration:.45};
+    object(value,name,['name','duration']);
+    return {name:choice(value.name,name,transitions),duration:number(value.duration??.45,name+' duration',.03,15)};
   }
   const settings = {
     definition(name,type){assert(catalog.length<256,'Limit: 256 definitions');catalog.push({name,type});},
@@ -89,17 +95,32 @@ export function recorder() {
       assert(model.scenes.length < 100, 'Use at most 100 scenes.');
       text(id, 'Scene ID');
       assert(!model.scenes.some(s => s.id === id), 'Duplicate scene ID: ' + id);
-      object(opts, 'scene()', ['location', 'time', 'duration']);
+      object(opts, 'scene()', ['location', 'time', 'duration','weather','transitionIn','transitionOut']);
       const duration = number(opts.duration, 'Duration (seconds)', 0.01, 600);
       assert(model.duration + duration <= 600, 'The timeline must be at most 600 seconds.');
       current = {
         id, location: choice(opts.location, 'location', [...locations,'empty']), time: choice(opts.time, 'time', times),
-        start: model.duration, duration, nodes:[], crowds:[], placements: [], props: [], actions: [], cameras: [], captions: [], sounds: [],
+        start: model.duration, duration,
+        ...(opts.weather!==undefined?{weather:choice(opts.weather,'weather',weatherNames)}:{}),
+        ...(opts.transitionIn!==undefined?{transitionIn:transitionOptions(opts.transitionIn,'transitionIn')}:{}),
+        ...(opts.transitionOut!==undefined?{transitionOut:transitionOptions(opts.transitionOut,'transitionOut')}:{}),
+        nodes:[], crowds:[], placements: [], props: [], actions: [], cameras: [], captions: [], sounds: [],
       };
     },
     close() {
       assert(current, 'No active scene.');
-      for (const list of ['actions', 'cameras', 'captions', 'sounds']) current[list].sort((a, b) => a.t - b.t);
+      if(current.weather==='storm')for(const t of stormTimes(current.duration))current.sounds.push({t,name:'thunder'});
+      for(const list of ['actions','cameras','captions','sounds','effects','bubbles','titles','transitions','timeChanges']){
+        current[list]?.sort((a,b)=>a.t-b.t);
+      }
+      if(current.edits){
+        const clock=compileClock(current.duration,current.edits);
+        current.sourceDuration=current.duration;
+        current.duration=clock.duration;
+        current.clock=clock.spans;
+        delete current.edits;
+      }
+      assert(model.duration+current.duration<=600,'The retimed timeline must be at most 600 seconds.');
       model.scenes.push(current);
       model.duration += current.duration;
       current = null;
@@ -144,6 +165,10 @@ export function recorder() {
       if (action === 'turn_to') Array.isArray(arg) ? vector(arg, 'Turn target') : number(arg, 'Heading (degrees)', -3600, 3600);
       if (action === 'emote') choice(arg, 'expression', expressions);
       if (action === 'shoot_ball' && arg !== null) vector(arg, 'Hoop target');
+      if(['hug','give','push'].includes(action)&&arg!==null)handle(arg);
+      if(action==='give')handle(arg);
+      if(['hold','pick_up'].includes(action))choice(arg,'held item',heldItems);
+      if(action==='dance'&&arg!==null)choice(arg,'dance style',danceStyles);
       current.actions.push({ t: at(t), char: handle(char), action, arg });
     },
     cam(t, shot, opts = {}) {
@@ -174,6 +199,39 @@ export function recorder() {
       if (opts.intensity !== undefined) number(opts.intensity, 'Light intensity', 0, 8);
       if (opts.ambient !== undefined) number(opts.ambient, 'Ambient light', 0, 5);
       current.light = opts;
+    },
+    ambience(name,opts={}){
+      object(opts,'ambience',['volume']);
+      current.ambience={name:choice(name,'ambience',ambienceNames),volume:number(opts.volume??.55,'ambience volume',0,1)};
+    },
+    music(name,opts={}){
+      object(opts,'music',['volume','fadeIn']);
+      current.music={name:choice(name,'music',musicNames),volume:number(opts.volume??.55,'music volume',0,1),fadeIn:number(opts.fadeIn??.4,'music fadeIn',0,30)};
+    },
+    fx(t,name,opts={}){
+      object(opts,'fx',['target','position','duration','intensity']);
+      assert(opts.target===undefined||opts.position===undefined,'fx: use target or position.');
+      (current.effects??=[]).push({t:at(t),name:choice(name,'effect',fxNames),target:opts.target===undefined?null:handle(opts.target),position:vector(opts.position??[0,2,0],'effect position'),duration:number(opts.duration??2,'effect duration',.03,60),intensity:number(opts.intensity??1,'effect intensity',0,3)});
+    },
+    bubble(t,char,value,opts={}){
+      object(opts,'bubble',['kind','duration']);
+      (current.bubbles??=[]).push({t:at(t),char:handle(char),text:text(value,'bubble text',180),kind:choice(opts.kind??'speech','bubble kind',['speech','thought','exclaim']),duration:number(opts.duration??2,'bubble duration',.03,30)});
+    },
+    title(t,value,opts={}){
+      object(opts,'title',['sub','duration','style']);
+      (current.titles??=[]).push({t:at(t),text:text(value,'title text',160),sub:opts.sub===undefined?'':text(opts.sub,'subtitle',180),style:choice(opts.style??'big','title style',['big','lowerthird','chapter']),duration:number(opts.duration??2,'title duration',.03,30)});
+    },
+    transition(t,name,opts={}){
+      object(opts,'transition',['duration']);
+      (current.transitions??=[]).push({t:at(t),...transitionOptions({name,duration:opts.duration},'transition')});
+    },
+    slowmo(t,duration,factor){
+      (current.edits??=[]).push({t:at(t),length:number(duration,'slowmo duration',.01,600),rate:number(factor,'slowmo factor',.05,1)});
+    },
+    freeze(t,duration){(current.edits??=[]).push({t:at(t),length:number(duration,'freeze duration',.01,60),rate:0});},
+    timeOfDay(t,value,opts={}){
+      object(opts,'timeOfDay',['duration']);
+      (current.timeChanges??=[]).push({t:at(t),value:choice(value,'time',times),duration:number(opts.duration??1,'time transition duration',.03,60)});
     },
     sfx(t, name) { current.sounds.push({ t: at(t), name: text(name, 'Sound') }); },
   };

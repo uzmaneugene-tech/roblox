@@ -1,3 +1,4 @@
+import {actionTimes,extraPose} from './action-poses.js';
 export const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
 export const mix = (a, b, q) => a + (b - a) * q;
 export const smooth = x => { const p = clamp(x); return p*p*(3-2*p); };
@@ -60,12 +61,17 @@ function sample(segment, absolute) {
     ball=t<=release+flight+.32 ? hand.map((v,i)=>mix(v,hoop[i],p)
       +(i===1?4*p*(1-p)*2.05-Math.max(0,t-release-flight)**2*13:0)) : null;
   }
+  if(action in actionTimes){
+    const extra=extraPose(action,arg,t,smooth(q),impulse,rot);
+    low=extra.low;root=extra.root;face=extra.face??face;
+    pos[0]+=Math.sin(direction)*extra.forward;pos[2]+=Math.cos(direction)*extra.forward;
+  }
   // Blend every pivot and root offset from the pose already visible at the event boundary.
   for(const p of parts) rot[p]=rot[p].map((v,i)=>mix(from.rot[p][i],v,blend));
   return {pos,yaw:direction,breath:1+.009*Math.sin(absolute*2.2),root:mix(from.root,root,blend),low:mix(from.low,low,blend),rot,face,ball};
 }
 
-export function compileMotion(placement, events, hoops = []) {
+export function compileMotion(placement, events, hoops = [], placements = new Map()) {
   const defaultPose = {pos:[...placement],yaw:0,root:0,low:0,rot:baseRot(),face:'happy',ball:null};
   const segments=[{action:'idle',start:0,duration:1,from:defaultPose,yaw:0}];
   for(const event of events){
@@ -75,9 +81,10 @@ export function compileMotion(placement, events, hoops = []) {
     const targets=arg&&action==='shoot_ball'?[arg]:hoops;
     const hoop=action==='shoot_ball'?targets.reduce((best,item)=>!best||distance(from.pos,item)<distance(from.pos,best)?item:best,null)
       ?? [from.pos[0],from.pos[1]+4.7,from.pos[2]+9] : null;
-    const yaw=goal||hoop?heading(from.pos,goal??hoop,from.yaw)
+    const partner=['hug','give','push'].includes(action)?placements.get(arg):null;
+    const yaw=goal||hoop||partner?heading(from.pos,goal??hoop??partner,from.yaw)
       :action==='turn_to'?(Array.isArray(arg)?heading(from.pos,arg,from.yaw):arg*Math.PI/180):from.yaw;
-    const duration=goal?Math.max(.28,distance(from.pos,goal)/(action==='run_to'?5.8:2.55)):event.duration??durations[action]??1;
+    const duration=goal?Math.max(.28,distance(from.pos,goal)/(action==='run_to'?5.8:2.55)):event.duration??durations[action]??actionTimes[action]??1;
     segments.push({action,arg,frames:event.frames,start,duration,from,goal,yaw,hoop});
   }
   return t => sample(segments.findLast(s=>s.start<=t) ?? segments[0],t);
