@@ -56,8 +56,22 @@
       <h2>Story Preview</h2>
       <div id="story-frame" class="story-frame" hidden>
         <canvas id="story-film" width="360" height="640" aria-label="Story playback preview"></canvas>
+        <svg id="tools-overlay" viewBox="0 0 900 1600" aria-hidden="true"></svg>
         <span id="story-caption" class="story-word"></span>
       </div>
+      <details id="tools-panel"><summary>Scene Tools</summary>
+        <p>Run a story, then tap to pick. Drag to look, pinch to fly forward, or drag two fingers to move.</p>
+        <output id="tools-position">Tap the preview to pick a position.</output>
+        <div class="actions"><button id="tools-coords">Copy position</button><button id="tools-shot">Save as shot</button></div>
+        <div class="actions"><button id="tools-up">Up</button><button id="tools-down">Down</button><button id="tools-reset">Return to story camera</button></div>
+        <label><input type="checkbox" id="tools-grid"> Grid, axes and 5-stud ruler</label>
+        <label><input type="checkbox" id="tools-place"> Place helper: copy a line on tap</label>
+        <label>Placement <select id="tools-kind"><option>place</option><option>spawn</option></select></label>
+        <label>Character variable or library name <input id="tools-name" value="jin"></label>
+        <label>Quality (preview and export) <select id="tools-quality"><option>High</option><option>Medium</option><option>Low</option></select></label>
+        <label><input type="checkbox" id="tools-grain"> Film grain</label>
+      </details>
+      <button id="tools-debug">Copy debug info + PNG</button><output id="tools-result" role="status"></output><pre id="tools-log"></pre>
       <div class="actions"><a href="#characters">Open Character Preview ↗</a></div>
     </div>
   </div>
@@ -95,7 +109,7 @@
 </section>
 <section id="cheatsheet" hidden>
   <div class="eyebrow"><span></span> STORY CODE</div>
-  <div class="actions"><button id="cheatsheet-copy" class="primary" disabled>Copy cheatsheet</button></div>
+  <div class="actions"><button id="cheatsheet-copy" class="primary" disabled>Copy cheatsheet</button><a id="cheatsheet-file" download="framecut-cheatsheet.txt" hidden>Download complete text</a></div>
   <p id="cheatsheet-status" role="status"></p>
   <textarea id="cheatsheet-text" aria-label="Cheatsheet text for copying" rows="12" readonly hidden></textarea>
   <article id="cheatsheet-manual">Loading cheatsheet…</article>

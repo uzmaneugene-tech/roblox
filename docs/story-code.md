@@ -53,8 +53,25 @@ scene("Practice", { location: "basketball_court", time: "dusk", duration: 5 }, s
 
 Face names: `happy`, `shocked`, `sad`, `angry`, `shouting`.
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:5871d8571070f3b79e01203417d0d91f26afe6eaeb8dc51ec2d1ec0c98fffdbf -->
+
+## Scene Tools and the final frame
+
+Open **Story Studio → Scene Tools** after Run. Tap geometry to see world coordinates and the nearest prop. Drag to look; pinch to move along the viewing direction, drag with two fingers to move sideways or vertically, or use Up/Down. Turn on the grid to see one-stud spacing and a five-stud ruler at the marker. **Save as shot** copies a static camera line at the current time within the scene. **Place helper** copies a placement on each tap: choose a character variable for `s.place` or a library name for `s.spawn`. Return to the story camera before reviewing playback. Debug copies the current state and downloads a frame PNG. Editor guides are excluded from PNG and video.
+
+| Scene call | Example |
+|---|---|
+| Set the color grade | `s.grade("warm_dusk")` — also accepts `"cold_night"`, `"bright_day"`, or `"neutral"`. |
+| Soften the image around a character | `s.dof({focus:jin,amount:.3})` — use a character handle and an amount from 0 to 1. Zero disables softening. |
+
+Story characters blink and articulate each spoken word. Narration has no speaker. Low, Medium and High select render detail. Preview lowers detail if several frames exceed the story's frame budget; export takes the effective quality at the moment it starts. Film grain is optional and follows timeline time when scrubbing or exporting.
+
 ## Camera
 
+
+<!-- /coderabbit-ai-generated:v1 -->
 | Shot | Mini example |
 |---|---|
 | Wide | `s.cam(0,"wide",{target:jin})` |

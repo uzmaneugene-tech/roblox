@@ -1,3 +1,4 @@
+import {sceneTools} from './scene-tools.js';
 import {execute} from './execute.js';
 import { connectVideoExport } from './export-ui.js';
 import { example } from './example.js';
@@ -23,7 +24,8 @@ export function startStudio() {
   const code = $('code'), run = $('run'), errors = $('errors'), errorText = $('error');
   const status = message => { $('status').textContent = message; };
   let history = readHistory(), timeline, filmViewer, raf = null;
-  const updateExport=connectVideoExport({getTimeline:()=>timeline,pauseStory:stop});
+  const tools=sceneTools(()=>filmViewer,stop,()=>errorText.textContent);
+  const updateExport=connectVideoExport({getTimeline:()=>timeline&&({...timeline,lookSettings:filmViewer?.lookSettings()??tools.settings()}),pauseStory:stop});
   const scene = $('scene');
   const scrub = $('time'), play = $('play');
   // A paste can arrive while this tab’s module is still loading.
@@ -97,7 +99,7 @@ export function startStudio() {
     const actual = Number(scrub.value);
     $('time-label').textContent = actual.toFixed(2) + ' / ' + timeline.duration.toFixed(2) + ' s';
     const active = locateScene(timeline, actual);
-    if (active) { scene.value = active.scene.id; filmViewer?.render(actual); }
+    if (active) { scene.value = active.scene.id; filmViewer?.render(actual);tools.refresh(); }
   }
   scrub.oninput = () => { stop(); seek(Number(scrub.value)); };
   scene.onchange = () => { stop(); seek(timeline.scenes.find(item => item.id === scene.value).start); };
@@ -140,7 +142,7 @@ export function startStudio() {
         showError(result.error);
         return;
       }
-      timeline = result.timeline;
+      tools.reset();timeline = result.timeline;timeline.lookSettings=tools.settings();
       updateExport(timeline);
       scene.replaceChildren(...timeline.scenes.map(s => new Option(s.id, s.id)));
       setPreviewCharacters(timeline.characters);

@@ -11,6 +11,8 @@ import { locateScene } from './timeline.js';
 
 import {buildLibrary} from './library/render.js';
 import {bodyScale} from './library/validate.js';
+import {faceBeat} from './performance-face.js';
+import {frameFinish} from './finish-frame.js';
 function dispose(root, permanentGeometry) {
   const resources=new Set();
   root.traverse(node=>{
@@ -23,6 +25,11 @@ function dispose(root, permanentGeometry) {
 }
 
 export function createStoryView(canvas, caption, fixedSize) {
+  const output=canvas,composite=Boolean(caption||fixedSize),finish=composite?frameFinish(output):null;
+  if(composite)canvas=document.createElement('canvas');
+  let debug=null,override=null,slow=0,auto='High',settings={quality:'High',grain:false};
+  const rank=['Low','Medium','High'];
+  const effective=()=>rank[Math.min(rank.indexOf(settings.quality),rank.indexOf(auto))];
   const gl=canvas.getContext('webgl2',{alpha:true,antialias:true});
   const renderer=gl&&new T.WebGLRenderer({canvas,context:gl,alpha:true,antialias:true});
   const paint=renderer?null:softwarePreview(T,canvas);
@@ -38,6 +45,7 @@ export function createStoryView(canvas, caption, fixedSize) {
     if(!stage)return;
     for(const root of stage.owned)dispose(root,false);
     for(const ball of stage.balls.values())ball.traverse(node=>{if(node.geometry?.type==='TorusGeometry')node.geometry.dispose()});
+    if(stage.contacts){stage.contacts.dispose();dispose(stage.contacts,false);}
     stage.library.dispose();
     scene.remove(stage.root);
     dispose(stage.set,true);
@@ -58,8 +66,19 @@ export function createStoryView(canvas, caption, fixedSize) {
     }
     const libraryRoot=new T.Group();root.add(libraryRoot);
     const library=buildLibrary(libraryRoot,data.nodes??[],data.crowds??[],data.time);
-    const solids=[...library.solids];set.updateMatrixWorld(true);
-    set.traverse(node=>{if(node.userData.solid){const box=new T.Box3().setFromObject(node);solids.push({min:box.min.toArray(),max:box.max.toArray()});}});
+    const picks=[...library.picks],solids=[...library.solids];set.updateMatrixWorld(true);
+    set.traverse(node=>{if(node.userData.prop)picks.push({name:node.userData.prop,point:node.getWorldPosition(new T.Vector3())});if(node.userData.solid){const box=new T.Box3().setFromObject(node);solids.push({min:box.min.toArray(),max:box.max.toArray()});}});
+    // Share one radial texture and draw call across static contact patches.
+    const grounded=picks.filter(p=>Math.abs(p.point.y)<.7).slice(0,256);
+    let contacts;
+    if(grounded.length){
+      const template=new T.Group();shadow(template,0,0,1,1);
+      const m=template.children[0];contacts=new T.InstancedMesh(m.geometry,m.material,grounded.length);
+      const dummy=new T.Object3D();dummy.rotation.x=-Math.PI/2;
+      grounded.forEach(({point,name},i)=>{dummy.position.set(point.x,point.y+.085,point.z);
+        const r=/house|tower|shop|apartment/.test(name)?8:/car|bench|bus/.test(name)?4:2;
+        dummy.scale.set(r,r*.75,1);dummy.updateMatrix();contacts.setMatrixAt(i,dummy.matrix);});root.add(contacts);
+    }
     batch(set);
     const owned=[], models=new Map(), tracks=new Map(), balls=new Map();
     const placed=new Map(data.placements.map(p=>[p.char,p.position]));
@@ -88,7 +107,7 @@ export function createStoryView(canvas, caption, fixedSize) {
     scene.add(root);
     const face=new T.Quaternion(), inverse=new T.Quaternion(), halos=[];
     root.traverse(item=>{if(item.userData.halo)halos.push(item);});
-    stage={root,library,set,live,owned,models,tracks,balls,director,halos,face,inverse};
+    stage={contacts,picks,root,library,set,live,owned,models,tracks,balls,director,halos,face,inverse};
     const overrides=data.light??{};
     key.color.set(typeof overrides.color==='string'?overrides.color:preset.key);
     key.intensity=Number.isFinite(overrides.intensity)?T.MathUtils.clamp(overrides.intensity,0,8):preset.power;
@@ -108,17 +127,19 @@ export function createStoryView(canvas, caption, fixedSize) {
   }
 
   function render(time=lastTime, turntable) {
-    lastTime=time;lastTurntable=turntable;
+    const began=performance.now();lastTime=time;lastTurntable=turntable;
     const active=timeline&&locateScene(timeline,time);
     if(!active)return;
-    const bounds=fixedSize??canvas.getBoundingClientRect();
+    const bounds=fixedSize??output.getBoundingClientRect();
     if(!bounds.width||!bounds.height)return;
     if(active.scene!==current)load(active.scene);
     const dpr=fixedSize?1:Math.min(devicePixelRatio||1, renderer?2:1.15);
     const width=Math.round(bounds.width*dpr),height=Math.round(bounds.height*dpr);
-    if(canvas.width!==width||canvas.height!==height){
-      if(renderer)renderer.setSize(width,height,false);else{canvas.width=width;canvas.height=height;}
-    }
+    if(composite&&(output.width!==width||output.height!==height)){output.width=width;output.height=height;}
+    const quality=effective(),factor=composite?({High:1,Medium:.8,Low:.6}[quality]):1;
+    const rw=Math.max(1,Math.round(width*factor)),rh=Math.max(1,Math.round(height*factor));
+    if(canvas.width!==rw||canvas.height!==rh){if(renderer)renderer.setSize(rw,rh,false);else{canvas.width=rw;canvas.height=rh;}}
+    const characters=[];
     const t=active.localTime; stage.library.update(t);
     for(const [id, { model,pivot,baseShadow }] of stage.models) {
       const frame=stage.tracks.get(id)(t);
@@ -127,12 +148,14 @@ export function createStoryView(canvas, caption, fixedSize) {
       model.group.rotation.x=frame.root;
       for(const [part,rot] of Object.entries(frame.rot))model.parts[part].rotation.set(...rot);
       model.parts.torso.scale.y=frame.breath;
-      model.setFace(frame.face);
+      const beat=faceBeat(id,t,current.captions,frame.face);
+      model.setFace(frame.face,beat.mouth,beat.blink);
+      characters.push({id,name:timeline.characters.find(c=>c.id===id).name,position:pivot.position.toArray(),action:current.actions.findLast(e=>e.char===id&&e.t<=t)?.action??'idle',face:frame.face,...beat});
       baseShadow.position.set(frame.pos[0],frame.pos[1],frame.pos[2]);
       const ball=stage.balls.get(id);
       if(ball){ball.visible=Boolean(frame.ball);if(frame.ball)ball.position.set(frame.ball[0],frame.ball[1]-.34,frame.ball[2]);}
     }
-    const view=stage.director(t);
+    const view=override??stage.director(t);
     if(turntable){
       const bounds=stage.library.bounds.isEmpty()?new T.Box3(new T.Vector3(-1.5,0,-1),new T.Vector3(1.5,6,1)):stage.library.bounds;
       const center=bounds.getCenter(new T.Vector3()),size=bounds.getSize(new T.Vector3());
@@ -146,18 +169,37 @@ export function createStoryView(canvas, caption, fixedSize) {
     for(const glow of stage.halos)glow.quaternion.copy(glow.parent.getWorldQuaternion(stage.inverse).invert()).multiply(stage.face);
     if(renderer)renderer.render(scene,camera);else paint(scene,camera);
     const word=captionAt(active.scene.captions,t);
+    if(finish){
+      const target=stage.models.get(current.dof?.focus);let focus;
+      if(target){const p=target.pivot.position.clone();p.y+=2.7;const d=p.distanceTo(camera.position);p.project(camera);focus={x:(p.x+1)/2,y:(1-p.y)/2,r:Math.min(2,2.9/(Math.max(.1,d)*2*Math.tan(view.fov*Math.PI/360)))};}
+      finish(canvas,{time:current.time,grade:current.grade,dof:current.dof,focus,quality,noise:settings.grain,t,word});
+    }
+    debug={title:timeline.title,scene:current.id,localTime:t,timelineTime:time,camera:{from:[...view.from],look:[...view.look],fov:view.fov},characters,quality};
+    if(!fixedSize&&composite){slow=performance.now()-began>1000/timeline.fps?slow+1:0;if(slow>=4){auto=rank[Math.max(0,rank.indexOf(quality)-1)];slow=0;}}
     if(caption){
       caption.textContent=word?.word??'';
       caption.style.transform='scale('+(word?.scale??1)+')';
     }
-    canvas.dataset.shot=view.shot;
+    output.dataset.shot=view.shot;
     return { word, time:active.scene.time };
   }
   const resize = fixedSize ? null : new ResizeObserver(()=>render(lastTime,lastTurntable));
-  resize?.observe(canvas);
+  resize?.observe(output);
   return {
-    setTimeline(data) { clear(); current=null;timeline=data;lastTime=0;if(!fixedSize)render(0); },
-    render,
+    setTimeline(data) { override=null;debug=null;auto='High';settings={...settings,...data.lookSettings};clear(); current=null;timeline=data;lastTime=0;if(!fixedSize)render(0); },
+    render,debug:()=>debug,lookSettings:()=>({...settings,quality:effective()}),
+    configure(options){settings={...settings,...options};auto='High';slow=0;render(lastTime);},
+    camera(view){override=view;render(lastTime);},
+    project(point){const p=new T.Vector3(...point).project(camera);return [(p.x+1)/2,(1-p.y)/2,p.z];},
+    pick(x,y){
+      if(!stage)return null;
+      const ray=new T.Raycaster();ray.setFromCamera(new T.Vector2(2*x-1,1-2*y),camera);
+      const hit=ray.intersectObject(stage.root,true).find(h=>h.object.visible&&h.object!==stage.contacts&&!h.object.userData.halo);
+      const point=hit?.point??ray.ray.intersectPlane(new T.Plane(new T.Vector3(0,1,0),0),new T.Vector3());
+      if(!point)return null;
+      let best=Infinity,name=null;for(const p of stage.picks){const d=p.point.distanceToSquared(point);if(d<best){best=d;name=p.name;}}
+      return {position:point.toArray().map(v=>+v.toFixed(2)),nearest:name};
+    },
     dispose() {
       resize?.disconnect(); clear();
       renderer?.dispose(); renderer?.forceContextLoss();

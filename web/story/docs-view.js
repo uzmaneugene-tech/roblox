@@ -21,14 +21,17 @@ export async function cheatsheet() {
   const target=document.getElementById('cheatsheet-manual'), button=document.getElementById('cheatsheet-copy');
   const status=document.getElementById('cheatsheet-status'), manual=document.getElementById('cheatsheet-text');
   try{
-    const {allItems}=await import('./library/store.js');
-    const text=(await readDoc('story-code'))+'\n\n'+await libraryReference(await allItems());
+    const {builtins,customItems}=await import('./library/store.js');
+    const items=[...await builtins(),...await customItems().catch(()=>[])];
+    const text=(await readDoc('story-code'))+'\n\n'+await libraryReference(items);
     renderDocs(target,[text]);
+    manual.value=text;
+    const download=document.getElementById('cheatsheet-file');download.href=URL.createObjectURL(new Blob([text],{type:'text/plain;charset=utf-8'}));download.hidden=false;
     button.disabled=false;
     button.onclick=async()=>{
       try{
         await navigator.clipboard.writeText(text);
-        status.textContent='Cheatsheet copied.';
+        status.textContent='Copied '+text.length.toLocaleString()+' characters, including '+items.length+' items. If your destination limits pasted text, use Download complete text.';
       }catch{
         manual.hidden=false;manual.value=text;manual.focus();manual.select();
         status.textContent='Cheatsheet selected. Use your browser’s Copy command.';

@@ -1,5 +1,4 @@
 import { createStoryView } from './story-view.js';
-import { paintSky } from './world/preview.js';
 import { prepareAudio } from './export-audio.js';
 import { encodeTimelineFrames, exportName, exportPlan, EXPORT_FPS, frameTime, MAX_OUTPUT_BYTES } from './export-timing.js';
 
@@ -7,20 +6,6 @@ function surface(width,height) {
   const canvas = document.createElement('canvas');
   canvas.width = width; canvas.height = height;
   return canvas;
-}
-
-function drawCaption(ctx, width, height, word) {
-  if (!word) return;
-  ctx.save();
-  ctx.translate(width/2,height*.88);
-  ctx.scale(word.scale,word.scale);
-  const size=width*.084;
-  ctx.font='950 '+size+'px system-ui, sans-serif';
-  ctx.textAlign='center';ctx.textBaseline='bottom';ctx.lineJoin='round';
-  ctx.lineWidth=size*.16;ctx.strokeStyle='#101119';ctx.fillStyle='#fff';
-  ctx.strokeText(word.word,0,0,width*.85);
-  ctx.fillText(word.word,0,0,width*.85);
-  ctx.restore();
 }
 
 const pause = ms => new Promise(resolve=>setTimeout(resolve,ms));
@@ -142,19 +127,12 @@ export async function exportStoryVideo(timeline, {height, file, offset=0, effect
     else if(globalThis.VideoEncoder && await lib.canEncodeVideo('vp8',capabilities)
       && (!audio || await lib.canEncodeAudio('opus',sound)))mode='webm';
     signal.throwIfAborted();
-    const renderCanvas=surface(plan.width,height), canvas=surface(plan.width,height), sky=surface(plan.width,height);
-    const ctx=canvas.getContext('2d',{alpha:false}), skyCtx=sky.getContext('2d',{alpha:false});
-    if(!ctx||!skyCtx)throw new Error('Could not allocate a video canvas. Try 720p.');
+    const renderCanvas=surface(plan.width,height), canvas=surface(plan.width,height);
+    const ctx=canvas.getContext('2d',{alpha:false});
+    if(!ctx)throw new Error('Could not allocate a video canvas. Try 720p.');
     view=createStoryView(renderCanvas,null,{width:plan.width,height});
     view.setTimeline(timeline);
-    let phase;
-    function renderFrame(i) {
-      const frame=view.render(frameTime(i));
-      if(frame.time!==phase){phase=frame.time;paintSky(skyCtx,phase,plan.width,height);}
-      ctx.drawImage(sky,0,0);
-      ctx.drawImage(renderCanvas,0,0);
-      drawCaption(ctx,plan.width,height,frame.word);
-    }
+    function renderFrame(i){view.render(frameTime(i));ctx.drawImage(renderCanvas,0,0);}
     function report(processed,currentMode) {
       const elapsed=(performance.now()-start)/1000;
       onProgress({processed,total:plan.frames,elapsed,eta:processed?elapsed/processed*(plan.frames-processed):null,mode:currentMode});

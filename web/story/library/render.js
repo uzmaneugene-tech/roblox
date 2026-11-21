@@ -28,14 +28,14 @@ export function buildLibrary(root,nodes,crowds,time){
     const key=g.uuid+m.uuid;let b=batches.get(key);if(!b){b={g,m,entries:[]};batches.set(key,b);}b.entries.push({matrix,animate});
   };
   const dummy=new T.Object3D(), ident=new T.Matrix4(), box=new T.Box3(), boundaries=new Map();
-  let lights=0;const bounds=new T.Box3();
+  const picks=[];let lights=0;const bounds=new T.Box3();
   for(const [i,{kind,options:o,extra,parent}] of nodes.entries()){
     transform(dummy,o);const matrix=new T.Matrix4().multiplyMatrices(parents[parent]?.matrix??ident,dummy.matrix);
     const inherited=parents[parent]?.style??{},styleOpts={...inherited};
     for(const key of ['color','rough','emissive','outline'])if(o[key]!==undefined)styleOpts[key]=o[key];
     const owner=extra.solid?i:parents[parent]?.owner;
     parents.push({matrix,owner,style:styleOpts});
-    if(kind==='group')continue;
+    if(kind==='group'){if('solid' in extra)picks.push({name:nodes[i].name,point:new T.Vector3().setFromMatrixPosition(matrix)});continue;}
     if(kind==='light'){if(time!=='day'&&lights++<4){const l=new T.PointLight(extra.color,extra.intensity,extra.distance);l.position.setFromMatrixPosition(matrix);root.add(l);}continue;}
     if(kind==='text'){const mesh=panel(root,1,1,0,0,0,extra.label,o.color??'#243a50');matrix.decompose(mesh.position,mesh.quaternion,mesh.scale);textures.push(mesh);continue;}
     const ground=kind==='ground',g=geometry(ground?'box':kind);
@@ -94,5 +94,5 @@ export function buildLibrary(root,nodes,crowds,time){
       updates.push(t=>{for(const [i,fn] of moving){fn(t,temp);mesh.setMatrixAt(i,temp);}mesh.instanceMatrix.needsUpdate=true;});}
   }
   for(const b of boundaries.values())solids.push({min:b.min.toArray(),max:b.max.toArray()});
-  return {bounds,solids,actors,update:t=>updates.forEach(f=>f(t)),dispose(){meshes.forEach(m=>m.dispose());geo.forEach(g=>g.dispose());mats.forEach(m=>m.dispose());textures.forEach(m=>{m.geometry.dispose();m.material.map.dispose();m.material.dispose();});}};
+  return {picks,bounds,solids,actors,update:t=>updates.forEach(f=>f(t)),dispose(){meshes.forEach(m=>m.dispose());geo.forEach(g=>g.dispose());mats.forEach(m=>m.dispose());textures.forEach(m=>{m.geometry.dispose();m.material.map.dispose();m.material.dispose();});}};
 }

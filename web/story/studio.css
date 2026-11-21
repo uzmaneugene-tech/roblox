@@ -83,3 +83,9 @@
 #lib-source{font:14px/1.5 var(--mono);width:100%}#lib-error{color:#ffc6a1;white-space:pre-wrap}
 @media(max-width:650px){.lib-grid{grid-template-columns:1fr}.lib-featured{grid-template-columns:1fr 1fr}}
 #library [hidden]{display:none!important}
+
+#tools-overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#story-caption{opacity:0;pointer-events:none}
+#tools-panel{padding:.8rem 0}#tools-panel summary{cursor:pointer;font-weight:bold}
+#tools-panel label{display:block;margin:.5rem 0}#tools-panel input[type=checkbox]{width:auto}
+#tools-position,#tools-result{display:block;overflow-wrap:anywhere}#tools-log,#tools-result{max-height:10em;overflow:auto;white-space:pre-wrap}

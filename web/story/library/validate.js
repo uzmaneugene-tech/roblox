@@ -17,5 +17,5 @@ export function shapeRecord(name,kind,parent,options,extra,nodes){
   }
   if(kind==='text'&&(typeof extra.label!=='string'||extra.label.length>150))fail('Use a text label up to 150 characters');
   if(kind==='light'&&(!/^#[0-9a-f]{3,6}$/i.test(extra.color)||![extra.intensity,extra.distance].every(n=>Number.isFinite(n)&&n>=0&&n<=200)))fail('Invalid light settings');
-  nodes.push({kind,parent,options,extra});return String(nodes.length-1);
+  nodes.push({name,kind,parent,options,extra});return String(nodes.length-1);
 }
