@@ -19,7 +19,10 @@ async function transaction(mode,fn){
   });
 }
 export const customItems=()=>transaction('readonly',s=>s.getAll());
-export const allItems=async()=>[...await builtins(),...await customItems()];
+export const allItems=async()=>{
+  const defaults=await builtins(),custom=await customItems(),names=new Set(custom.map(item=>item.name));
+  return [...defaults.filter(item=>!names.has(item.name)),...custom];
+};
 export const saveItems=items=>transaction('readwrite',s=>{for(const item of items)s.put(item)});
 export const removeItem=name=>transaction('readwrite',s=>s.delete(name));
 export const sources=items=>{

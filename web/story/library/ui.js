@@ -1,6 +1,7 @@
 import {allItems,customItems,removeItem,saveItems,sources} from './store.js';
 import {execute} from '../execute.js';
 import {createStoryView} from '../story-view.js';
+import {heldItems} from '../phase-two.js';
 
 const demo={name:'crowd',type:'demo',options:'count, area, seed, style'};
 const pretty=s=>s.replaceAll('_',' ');
@@ -56,7 +57,7 @@ export async function startLibrary(){
       const r=await execute('',[{name:record.name??'pasted-item',source}]);if(r.error)throw r.error;
       if(r.catalog.length!==1)throw Error('Use one define block per item. Import multiple items using a Framecut library export.');
       const {name,type}=r.catalog[0];
-      if(names.has(name)||items.some(i=>i.name===name&&i.builtin)||name===demo.name)throw Error(name+': duplicate or reserved bundled name. Rename your item.');
+      if(names.has(name)||items.some(i=>i.name===name&&i.builtin&&!(heldItems.includes(name)&&name!=='briefcase'))||name===demo.name)throw Error(name+': duplicate or reserved bundled name. Rename your item.');
       names.add(name);incoming.push({name,type,source});
     }
     const next=[...items.filter(i=>!names.has(i.name)),...incoming];
