@@ -47,6 +47,9 @@ export function recorder() {
   const catalog=[];
   function preset(opts){
     object(opts,'character()', ['outfit','hair','skin','body','accessories']);
+    const clothes=object(opts.outfit??{},'outfit',['shirt','pants','shoes','hat','shirtText']);
+    for(const [key,value] of Object.entries(clothes))if(value!=='')text(value,'outfit.'+key,80);
+    for(const key of ['hair','skin'])if(opts[key]!==undefined)text(opts[key],key,80);
     if(opts.body!==undefined)choice(opts.body,'body',bodies);
     if(opts.accessories!==undefined){assert(Array.isArray(opts.accessories)&&opts.accessories.length<=12,'Expected up to 12 accessories');opts.accessories.forEach(a=>choice(a,'accessory',accessories));}
   }
@@ -110,7 +113,10 @@ export function recorder() {
       ...(char === undefined ? {} : { char }) });
   }
   const methods = {
-    shape(...args){return shapeRecord(...args,current.nodes);},
+    shape(...args){
+      const k=args[1];if(k==='text')assert((current.textCount=(current.textCount??0)+1)<=80,'Use at most 80 text panels per scene.');
+      return shapeRecord(...args,current.nodes);
+    },
     sky(time){current.time=choice(time,'sky time',times);},
     fog(opts){object(opts,'fog',['near','far','color']); const near=number(opts.near??20,'fog near',0,500); current.fog={near,far:number(opts.far??100,'fog far',near+.1,1000),color:opts.color===undefined?null:text(opts.color,'fog color',30)};},
     animation(t,char,action,duration){current.actions.push({t:at(t),char:handle(char),action,duration,frames:[]});},

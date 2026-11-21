@@ -74,3 +74,11 @@
 #cheatsheet article { max-width:1000px; }
 #cheatsheet pre { overflow:auto; padding:14px; border:1px solid var(--line); }
 #cheatsheet td { overflow-wrap:anywhere; }
+.lib-grid{display:grid;grid-template-columns:minmax(180px,1fr) minmax(0,2.5fr);gap:1rem;margin:1.5rem 0}
+.lib-browser label,.lib-browser select{display:block;width:100%;margin:.5rem 0 1rem}
+.lib-featured{display:grid;gap:.4rem;margin:.75rem 0}.lib-featured button{text-align:left}
+.lib-turn{margin:0}.lib-turn figcaption span{font:12px var(--mono);text-transform:uppercase;letter-spacing:.1em;color:#a8b4ac}
+#lib-name{text-transform:capitalize;margin:.3rem 0 .75rem}
+#lib-canvas{display:block;width:100%;height:clamp(220px,36vh,420px);border-radius:8px}
+#lib-source{font:14px/1.5 var(--mono);width:100%}#lib-error{color:#ffc6a1;white-space:pre-wrap}
+@media(max-width:650px){.lib-grid{grid-template-columns:1fr}.lib-featured{grid-template-columns:1fr 1fr}}

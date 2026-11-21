@@ -21,7 +21,8 @@ export async function cheatsheet() {
   const target=document.getElementById('cheatsheet-manual'), button=document.getElementById('cheatsheet-copy');
   const status=document.getElementById('cheatsheet-status'), manual=document.getElementById('cheatsheet-text');
   try{
-    const text=await readDoc('story-code');
+    const {allItems}=await import('./library/store.js');
+    const text=(await readDoc('story-code'))+'\n\n'+await libraryReference(await allItems());
     renderDocs(target,[text]);
     button.disabled=false;
     button.onclick=async()=>{
@@ -36,4 +37,15 @@ export async function cheatsheet() {
   }catch(error){
     target.textContent=error.message;
   }
+}
+
+export async function libraryReference(items){
+  const examples=items.map(i=>{
+    const n=JSON.stringify(i.name);
+    const use=i.type==='location'?'scene("Set",{location:'+n+',time:"dusk",duration:4},s=>{})'
+      :i.type==='character'?'character("Hero",{preset:'+n+'})'
+      :i.type==='animation'?'s.do(0,jin,'+n+',{duration:2})':'s.spawn('+n+',[0,0,0])';
+    return '| '+i.name+' | '+i.type+' | '+(i.options||'—')+' | \`'+use+'\` |';
+  });
+  return await readDoc('library')+'\n\n### Available items on this device\n\n| Item | Type | Item options | Example |\n|---|---|---|---|\n'+examples.join('\n');
 }

@@ -31,20 +31,33 @@ export function buildLibrary(root,nodes,crowds,time){
   let lights=0;const bounds=new T.Box3();
   for(const [i,{kind,options:o,extra,parent}] of nodes.entries()){
     transform(dummy,o);const matrix=new T.Matrix4().multiplyMatrices(parents[parent]?.matrix??ident,dummy.matrix);
+    const inherited=parents[parent]?.style??{},styleOpts={...inherited};
+    for(const key of ['color','rough','emissive','outline'])if(o[key]!==undefined)styleOpts[key]=o[key];
     const owner=extra.solid?i:parents[parent]?.owner;
-    parents.push({matrix,owner});
+    parents.push({matrix,owner,style:styleOpts});
     if(kind==='group')continue;
     if(kind==='light'){if(time!=='day'&&lights++<4){const l=new T.PointLight(extra.color,extra.intensity,extra.distance);l.position.setFromMatrixPosition(matrix);root.add(l);}continue;}
     if(kind==='text'){const mesh=panel(root,1,1,0,0,0,extra.label,o.color??'#243a50');matrix.decompose(mesh.position,mesh.quaternion,mesh.scale);textures.push(mesh);continue;}
     const ground=kind==='ground',g=geometry(ground?'box':kind);
     const palette={grass:'#71ae76',asphalt:'#49505e',sand:'#e4c48a',concrete:'#a5b4bd',water:'#45add2'};
-    const style=ground?{...o,color:o.color??palette[o.texture??'grass']}:o;
+    const style=ground?{...o,color:o.color??palette[o.texture??'grass']}:styleOpts;
     if(ground)matrix.multiply(new T.Matrix4().makeScale(100,.15,100)).multiply(new T.Matrix4().makeTranslation(0,-.5,0));
     const slide=o.slide,animate=slide?(t,out)=>out.copy(matrix).premultiply(new T.Matrix4().makeTranslation(...slide.map(v=>v*(1-Math.cos(t*1.5))*.5))):null;
     put(g,mat(style),matrix,animate);
-    if(!ground&&kind!=='plane'&&o.outline!==false){
+    if(!ground&&kind!=='plane'&&styleOpts.outline!==false){
       const outlineMatrix=matrix.clone().multiply(new T.Matrix4().makeScale(1.017,1.017,1.017));
       put(g,mat(style,true),outlineMatrix,slide?(t,out)=>{animate(t,out);out.multiply(new T.Matrix4().makeScale(1.017,1.017,1.017));}:null);
+    }
+    if(ground&&o.texture){
+      // Low-poly surface marks share geometry and material with every other tile.
+      const colors={grass:'#699b64',asphalt:'#565d69',sand:'#d9b881',concrete:'#a1aeb2',water:'#86cbdc'};
+      const groundMatrix=parents[i].matrix.clone(); // matrix currently includes the slab scale
+      const g=geometry('box'),m=mat({color:colors[o.texture]});
+      for(let n=0;n<48;n++){
+        const x=((n*31)%97)/100-.48,z=((n*43)%89)/100-.44;
+        dummy.position.set(x,.56,z);dummy.rotation.set(0,n*.47,0);dummy.scale.set(o.texture==='water'?.034:.011,.03,.004);
+        dummy.updateMatrix();put(g,m,groundMatrix.clone().multiply(dummy.matrix));
+      }
     }
     if(!ground){box.set(new T.Vector3(-.5,-.5,-.5),new T.Vector3(.5,.5,.5)).applyMatrix4(matrix);bounds.union(box);
       if(owner!==undefined){if(!boundaries.has(owner))boundaries.set(owner,new T.Box3());boundaries.get(owner).union(box);}}

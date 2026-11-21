@@ -72,7 +72,7 @@ export function libraryAPI(command, base) {
           invoke(item,()=>item.fn(rig,duration*i/steps,opts??{}));
           command('keyframe',[parts.map(k=>{const r=rig[k].rotation;return vec(Array.isArray(r)?r:[r.x,r.y,r.z])})]);}
       };
-      fn(new Proxy(extra,{get:(o,k)=>Object.hasOwn(o,k)?o[k]:s[k]}));
+      return fn(new Proxy(extra,{get:(o,k)=>Object.hasOwn(o,k)?o[k]:s[k]}));
     });
   };
   const originalCharacter=base.character;

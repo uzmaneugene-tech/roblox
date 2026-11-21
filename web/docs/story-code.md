@@ -65,7 +65,7 @@ Face names: `happy`, `shocked`, `sad`, `angry`, `shouting`.
 | Low angle | `s.cam(10,"low_angle",{target:jin,shake:.15})` |
 | Static | `s.cam(12,"static",{from:[4,4,10],look:[0,2,0],cut:true})` |
 
-Options: `target` selects a placed character. `from` and `look` override the computed camera position and aim. `face:false` reverses the character-relative view. `side` is `"left"` or `"right"`. `ease` is transition duration in seconds; `cut:true` switches instantly. `shake` adds camera vibration, and shouts add a brief pulse. Default portrait vertical FOV is 43°.
+Options: `target` selects a placed character. `from` and `look` override the computed camera position and aim. `face:false` reverses the character-relative view. `side` is `"left"` or `"right"`. `ease` is transition duration in seconds; `cut:true` switches instantly. `shake` adds camera vibration, and shouts add a brief pulse. Default portrait FOV depends on the shot; see the Library camera distance table.
 
 ## Locations
 

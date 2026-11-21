@@ -32,7 +32,7 @@ export function createStoryView(canvas, caption, fixedSize) {
   const rim=new T.DirectionalLight('#c3ceff',.89);
   key.position.set(-26,38,22); rim.position.set(18,14,-19);
   scene.add(key,fill,rim);
-  let timeline, stage, current, lastTime=0;
+  let timeline, stage, current, lastTime=0, lastTurntable=null;
 
   function clear() {
     if(!stage)return;
@@ -107,8 +107,8 @@ export function createStoryView(canvas, caption, fixedSize) {
     canvas.style.backgroundImage=sky(data.time,preset);
   }
 
-  function render(time=lastTime) {
-    lastTime=time;
+  function render(time=lastTime, turntable) {
+    lastTime=time;lastTurntable=turntable;
     const active=timeline&&locateScene(timeline,time);
     if(!active)return;
     const bounds=fixedSize??canvas.getBoundingClientRect();
@@ -133,6 +133,13 @@ export function createStoryView(canvas, caption, fixedSize) {
       if(ball){ball.visible=Boolean(frame.ball);if(frame.ball)ball.position.set(frame.ball[0],frame.ball[1]-.34,frame.ball[2]);}
     }
     const view=stage.director(t);
+    if(turntable){
+      const bounds=stage.library.bounds.isEmpty()?new T.Box3(new T.Vector3(-1.5,0,-1),new T.Vector3(1.5,6,1)):stage.library.bounds;
+      const center=bounds.getCenter(new T.Vector3()),size=bounds.getSize(new T.Vector3());
+      const r=Math.max(1.5,Math.hypot(size.x,size.z)*.5,size.y*.57);
+      const dist=r*2.9*Math.max(1,height/width),a=turntable.angle;
+      view.fov=44;view.look=center.toArray();view.from=[center.x+dist*Math.sin(a),center.y+dist*.27,center.z+dist*Math.cos(a)];
+    }
     camera.aspect=width/height;camera.fov=view.fov;
     camera.position.fromArray(view.from);camera.userData.focus.fromArray(view.look);camera.lookAt(camera.userData.focus);
     camera.updateProjectionMatrix();camera.getWorldQuaternion(stage.face);
@@ -146,7 +153,7 @@ export function createStoryView(canvas, caption, fixedSize) {
     canvas.dataset.shot=view.shot;
     return { word, time:active.scene.time };
   }
-  const resize = fixedSize ? null : new ResizeObserver(()=>render());
+  const resize = fixedSize ? null : new ResizeObserver(()=>render(lastTime,lastTurntable));
   resize?.observe(canvas);
   return {
     setTimeline(data) { clear(); current=null;timeline=data;lastTime=0;if(!fixedSize)render(0); },

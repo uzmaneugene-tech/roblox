@@ -61,7 +61,7 @@ function readError(vm, describe, error) {
   }
   try {
     const { message, name, stack } = JSON.parse(vm.getString(details.value));
-    const file=/library\/([^:\n]+):(\d+)/.exec(stack);
+    const file=/library\/([^:\n]+):(\d+)/.exec(message+"\n"+stack);
     const line = Number(file?.[2]) || Number(/story\.js:(\d+)/.exec(stack)?.[1]) || null;
     const hint = name === 'ReferenceError' ? ' Valid Story Code functions: ' + globals.join(', ') + '.' : '';
     return { message: (file ? file[1]+': ' : '') + (message || 'Unknown error.') + hint, line };

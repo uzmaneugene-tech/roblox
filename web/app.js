@@ -7,7 +7,9 @@ function notice(msg){$('notice').textContent=msg;clearTimeout(timer);timer=setTi
 try{const saved=localStorage.getItem(key);if(saved)model=project(JSON.parse(saved))}catch{notice('Could not restore the saved project. Import a backup to recover it.')}
 function persist(){try{localStorage.setItem(key,JSON.stringify(model))}catch{notice('Browser storage unavailable or full. Download project JSON to keep your work.')}}
 function action(id,fn){$(id).onclick=async()=>{try{await fn()}catch(e){notice(e.message)}}}
+let libraryStarted=false;
 function loadView(page){
+ if(page==='library'&&!libraryStarted){libraryStarted=true;import('./story/library/ui.js').then(m=>m.startLibrary()).catch(error=>{libraryStarted=false;$('lib-error').textContent=error.message})}
  if(page==='builder'&&!previewStarted){previewStarted=true;import('./preview.js').then(m=>{renderPreview=m.monitor($('canvas'));preview()}).catch(()=>{$('preview-info').textContent='3D preview unavailable. Check your connection and browser; editing and export still work.'})}
  if(page==='story'&&!storyStarted){storyStarted=true;import('./story/studio.js?v=pages-tabs').then(m=>m.startStudio()).catch(error=>{console.error(error);storyStarted=false;notice('Story Studio could not load. Reload and try again.')})}
  if(page==='locations'&&!locationsStarted){locationsStarted=true;import('./story/world/preview.js').then(m=>m.startLocationPreview()).catch(error=>{console.error(error);locationsStarted=false;notice('Location Preview could not load. Reload and try again.')})}

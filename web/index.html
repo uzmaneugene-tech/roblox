@@ -1,5 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101211"><title>Framecut — Cinematic Studio</title><link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./story/studio.css"><link rel="icon" href="./favicon.svg" type="image/svg+xml"><script defer src="./navigation.js"></script><script type="module" src="./app.js?v=pages-tabs"></script></head><body>
-<header><a class="brand" href="#home"><i class="brandmark" aria-hidden="true">◩</i> FRAMECUT <small>/ STUDIO</small></a><nav aria-label="Main navigation"><a href="#story">Story Studio</a><a href="#locations">Location Preview</a><a href="#characters">Character Preview</a><a href="#cheatsheet">Cheatsheet</a><a href="#home">Overview</a><a href="#builder">Shot Builder</a><a href="#converter">Converter</a><a href="#captions">Caption Writer</a><a href="#guide">Guide</a></nav><span class="online"><b></b> STUDIO ONLINE</span></header>
+<header><a class="brand" href="#home"><i class="brandmark" aria-hidden="true">◩</i> FRAMECUT <small>/ STUDIO</small></a><nav aria-label="Main navigation"><a href="#story">Story Studio</a><a href="#locations">Location Preview</a><a href="#characters">Character Preview</a><a href="#library">Library</a><a href="#cheatsheet">Cheatsheet</a><a href="#home">Overview</a><a href="#builder">Shot Builder</a><a href="#converter">Converter</a><a href="#captions">Caption Writer</a><a href="#guide">Guide</a></nav><span class="online"><b></b> STUDIO ONLINE</span></header>
 <main><section id="home"><div class="hero"><div class="hero-copy"><div class="eyebrow"><span></span> BLENDER × ROBLOX</div><h1>Cinematic<br><em>Studio.</em></h1><p>Build your story shot by shot. Create cinematic camera sequences for Roblox, in Blender or right in your browser.</p><div class="actions"><a class="primary" download href="./downloads/roblox_cinematic_exporter.zip">↓ &nbsp;Download add-on</a><a class="secondary" href="#guide">Read the guide ↗</a></div></div>
 <figure class="monitor"><div class="screen"><div class="viewtop"><span class="rec">● REC</span><span>CAM A &nbsp; / &nbsp; 24 FPS</span></div><div class="reticle">+</div><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><div class="viewbottom">SC. 01 &nbsp; / &nbsp; EXT. CANYON</div></div><figcaption><span><b></b> CAMERA MONITOR</span><span>00:00:04:12</span></figcaption></figure></div>
 <div class="section-title"><div><div class="eyebrow"><span></span> WORKSPACE</div><h2>Studio tools</h2></div><small>01 — 03</small></div>
@@ -72,6 +72,25 @@
         <label>View <select id="story-angle"><option value="three-quarter">Three-quarter</option><option value="front">Front</option><option value="side">Side</option><option value="back">Back</option></select></label>
         <label>Expression <select id="story-expression"></select></label>
       </div>
+  </div>
+</section>
+<section id="library" hidden>
+  <div class="eyebrow"><span></span> FRAMECUT / ASSET DEPARTMENT</div>
+  <h1>Library</h1><p>Browse the collection, rotate a model, or add a building block of your own.</p>
+  <div class="lib-grid">
+    <div class="pane lib-browser">
+      <h2>Collection</h2><label>Type<select id="lib-type"><option value="all">All items</option><option value="building">Buildings</option><option value="prop">Props &amp; vehicles</option><option value="location">Locations</option><option value="animation">Animations</option><option value="character">Characters</option><option value="demo">Crowds</option></select></label>
+      <label>Item<select id="lib-item"></select></label>
+      <div class="eyebrow">FEATURED</div><div class="lib-featured"><button data-feature="tower">01 · Tower</button><button data-feature="mansion">02 · Mansion</button><button data-feature="slum_house">03 · Slum house</button><button data-feature="crowd">04 · Crowd</button></div>
+    </div>
+    <figure class="pane lib-turn"><figcaption><span id="lib-meta"></span><h2 id="lib-name">Tower</h2></figcaption><canvas id="lib-canvas" aria-label="Rotating library preview"></canvas>
+    <div class="actions"><label>Time <select id="lib-time"><option>day</option><option selected>dusk</option><option>night</option></select></label><button id="lib-spin">Pause rotation</button></div></figure>
+  </div>
+  <div class="pane"><label for="lib-source">Definition</label><textarea id="lib-source" rows="8" spellcheck="false"></textarea>
+    <div class="actions"><button id="lib-new">New item</button><button id="lib-save" class="primary">Save definition</button><button id="lib-delete" disabled>Delete item</button></div>
+    <p>Exports contain your saved items. Bundled items are already available on every device.</p>
+    <div class="actions"><button id="lib-json">Export library .json</button><button id="lib-js">Export library .js</button><label class="button">Import library<input id="lib-import" type="file" accept=".json,.js"></label><button id="lib-copy">Copy library cheatsheet</button></div>
+    <p id="lib-status" role="status"></p><pre id="lib-error" role="alert"></pre><button id="lib-copy-error" hidden>Copy error</button><textarea id="lib-copy-text" readonly hidden></textarea>
   </div>
 </section>
 <section id="cheatsheet" hidden>
