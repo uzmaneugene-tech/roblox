@@ -26,6 +26,10 @@ function sample(segment, absolute) {
     rot.torso[0]=strength*(action==='run_to'?.15:.045);
     low=Math.abs(Math.sin(t*gait))*strength*.12;
   }
+  if(segment.frames){
+    const f=q*(segment.frames.length-1),a=Math.floor(f),b=Math.ceil(f);
+    parts.forEach((k,i)=>{rot[k]=segment.frames[a][i].map((v,j)=>mix(v,segment.frames[b][i][j],f-a));});
+  }
   const impulse = smooth(t/.21)*smooth((duration-t)/.28);
   if(action==='wave') {
     rot.armR[2]=(2.27+Math.sin(t*15)*.27)*impulse;
@@ -73,8 +77,8 @@ export function compileMotion(placement, events, hoops = []) {
       ?? [from.pos[0],from.pos[1]+4.7,from.pos[2]+9] : null;
     const yaw=goal||hoop?heading(from.pos,goal??hoop,from.yaw)
       :action==='turn_to'?(Array.isArray(arg)?heading(from.pos,arg,from.yaw):arg*Math.PI/180):from.yaw;
-    const duration=goal?Math.max(.28,distance(from.pos,goal)/(action==='run_to'?5.8:2.55)):durations[action]??1;
-    segments.push({action,arg,start,duration,from,goal,yaw,hoop});
+    const duration=goal?Math.max(.28,distance(from.pos,goal)/(action==='run_to'?5.8:2.55)):event.duration??durations[action]??1;
+    segments.push({action,arg,frames:event.frames,start,duration,from,goal,yaw,hoop});
   }
   return t => sample(segments.findLast(s=>s.start<=t) ?? segments[0],t);
 }

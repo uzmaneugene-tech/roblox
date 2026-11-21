@@ -1,4 +1,4 @@
-export const sceneMethods = ['place', 'prop', 'do', 'cam', 'say', 'narrate', 'light', 'sfx'];
+export const sceneMethods = ['place', 'prop', 'do', 'cam', 'say', 'narrate', 'light', 'sfx', 'crowd'];
 export const globals = ['story', 'character', 'scene'];
 export const locations = ['neighborhood_street', 'backyard_party', 'basketball_court', 'house_interior'];
 export const times = ['day', 'dusk', 'night'];

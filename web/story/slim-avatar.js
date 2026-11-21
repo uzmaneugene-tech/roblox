@@ -103,6 +103,7 @@ export function makeAvatar(o = {}, P = SLIM) {
     drawFace(ctx, name);
     texture.needsUpdate = true;
   };
+  const hairStart=head.children.length;
   const hairBase = part(hw + .1, .4, hd + .1, C.hair, P); hairBase.position.y = hh / 2 + .02; head.add(hairBase);
   const back = part(hw + .1, hh * .7, .3, C.hair, P); back.position.set(0, .1, -hd / 2 - .02); head.add(back);
   [[-.5, .3], [-.17, .36], [.17, .32], [.5, .28]].forEach(([x, drop], i) => {
@@ -115,5 +116,5 @@ export function makeAvatar(o = {}, P = SLIM) {
   });
 
   root.traverse(n => { if (n.isMesh) n.castShadow = true; });
-  return { group: root, parts: { head, torso, armL, armR, legL, legR }, setFace };
+  return { group: root, hairPieces:head.children.slice(hairStart), parts: { head, torso, armL, armR, legL, legR }, setFace };
 }

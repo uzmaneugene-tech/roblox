@@ -1,5 +1,6 @@
 import { actions, expressions, locations, props, shots, times } from './registry.js';
 
+import {shapeRecord,bodies,accessories} from './library/validate.js';
 export const MAX_SOURCE = 128 * 1024;
 export const MAX_RECORD = 8 * 1024;
 
@@ -43,7 +44,15 @@ export function recorder() {
     assert(typeof id === 'string' && model.characters.some(c => c.id === id), 'Expected a handle returned by character().');
     return id;
   };
+  const catalog=[];
+  function preset(opts){
+    object(opts,'character()', ['outfit','hair','skin','body','accessories']);
+    if(opts.body!==undefined)choice(opts.body,'body',bodies);
+    if(opts.accessories!==undefined){assert(Array.isArray(opts.accessories)&&opts.accessories.length<=12,'Expected up to 12 accessories');opts.accessories.forEach(a=>choice(a,'accessory',accessories));}
+  }
   const settings = {
+    definition(name,type){assert(catalog.length<256,'Limit: 256 definitions');catalog.push({name,type});},
+    checkPreset(name,opts){preset(opts);},
     story(opts = {}) {
       assert(!hasStory, 'Call story() once.');
       object(opts, 'story()', ['title', 'aspect', 'fps']);
@@ -62,14 +71,14 @@ export function recorder() {
       text(name, 'Character name');
       assert(model.characters.length < 32, 'Use at most 32 characters.');
       assert(!model.characters.some(c => c.name === name), 'Duplicate character name: ' + name);
-      object(opts, 'character()', ['outfit', 'hair', 'skin']);
+      preset(opts);
       const outfit = object(opts.outfit ?? {}, 'outfit', ['shirt', 'pants', 'hat', 'shirtText', 'shoes']);
       for (const [key, value] of Object.entries(outfit)) {
         if (value !== '') text(value, 'outfit.' + key, 80);
       }
       for (const key of ['hair', 'skin']) if (opts[key] !== undefined) text(opts[key], key, 80);
       const id = 'character:' + model.characters.length;
-      model.characters.push({ id, name, outfit, hair: opts.hair, skin: opts.skin });
+      model.characters.push({ id, name, outfit, body:opts.body, accessories:opts.accessories, hair: opts.hair, skin: opts.skin });
       return id;
     },
     open(id, opts) {
@@ -81,8 +90,8 @@ export function recorder() {
       const duration = number(opts.duration, 'Duration (seconds)', 0.01, 600);
       assert(model.duration + duration <= 600, 'The timeline must be at most 600 seconds.');
       current = {
-        id, location: choice(opts.location, 'location', locations), time: choice(opts.time, 'time', times),
-        start: model.duration, duration, placements: [], props: [], actions: [], cameras: [], captions: [], sounds: [],
+        id, location: choice(opts.location, 'location', [...locations,'empty']), time: choice(opts.time, 'time', times),
+        start: model.duration, duration, nodes:[], crowds:[], placements: [], props: [], actions: [], cameras: [], captions: [], sounds: [],
       };
     },
     close() {
@@ -101,6 +110,14 @@ export function recorder() {
       ...(char === undefined ? {} : { char }) });
   }
   const methods = {
+    shape(...args){return shapeRecord(...args,current.nodes);},
+    sky(time){current.time=choice(time,'sky time',times);},
+    fog(opts){object(opts,'fog',['near','far','color']); const near=number(opts.near??20,'fog near',0,500); current.fog={near,far:number(opts.far??100,'fog far',near+.1,1000),color:opts.color===undefined?null:text(opts.color,'fog color',30)};},
+    animation(t,char,action,duration){current.actions.push({t:at(t),char:handle(char),action,duration,frames:[]});},
+    keyframe(frame){current.actions.at(-1).frames.push(frame);},
+    crowd(opts){object(opts,'crowd',['count','area','seed','style']);const count=number(opts.count,'crowd count',1,150);
+      assert(Number.isInteger(count)&&current.crowds.reduce((n,c)=>n+c.count,0)+count<=150,'Use at most 150 NPCs per scene');
+      assert(Array.isArray(opts.area)&&opts.area.length===2,'crowd area is [width,depth]');current.crowds.push({count,area:opts.area.map(n=>number(n,'area',1,500)),seed:number(opts.seed??1,'seed',0,4294967295),style:choice(opts.style??'rich','crowd style',['rich','poor','kids'])});},
     place(char, position) {
       current.placements.push({ char: handle(char), position: vector(position, 'Character position') });
     },
@@ -153,8 +170,9 @@ export function recorder() {
     sfx(t, name) { current.sounds.push({ t: at(t), name: text(name, 'Sound') }); },
   };
   return {
+    catalog,
     record(command, args) {
-      assert(++commands <= 4096, 'Story Code exceeded 4,096 API calls.');
+      assert(++commands <= 28000, 'Story Code exceeded 28,000 API calls.');
       assert(Array.isArray(args), 'Invalid Story Code arguments.');
       if (Object.hasOwn(settings, command)) return settings[command](...args);
       assert(current && Object.hasOwn(methods, command), 'Call scene methods inside a scene() callback.');

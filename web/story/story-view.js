@@ -9,6 +9,8 @@ import { captionAt, compileMotion, smooth } from './motion.js';
 import { compileCamera } from './shots.js';
 import { locateScene } from './timeline.js';
 
+import {buildLibrary} from './library/render.js';
+import {bodyScale} from './library/validate.js';
 function dispose(root, permanentGeometry) {
   const resources=new Set();
   root.traverse(node=>{
@@ -36,6 +38,7 @@ export function createStoryView(canvas, caption, fixedSize) {
     if(!stage)return;
     for(const root of stage.owned)dispose(root,false);
     for(const ball of stage.balls.values())ball.traverse(node=>{if(node.geometry?.type==='TorusGeometry')node.geometry.dispose()});
+    stage.library.dispose();
     scene.remove(stage.root);
     dispose(stage.set,true);
     stage=null;
@@ -46,14 +49,16 @@ export function createStoryView(canvas, caption, fixedSize) {
     const preset=presets[data.time], ctx={dark:data.time!=='day',night:data.time==='night',glows:0};
     const root=new T.Group(), set=new T.Group(), live=new T.Group();
     root.add(set,live);
-    const layout=locationRegistry[data.location](set,ctx);
-    dressGround(set,data.location,ctx);
+    const layout=locationRegistry[data.location]?.(set,ctx)??{focus:[0,0,0]};
+    if(locationRegistry[data.location])dressGround(set,data.location,ctx);
     const hoops=[...(layout.hoops??[])];
     for(const prop of data.props) {
       const model=addProp(set,prop.type,prop.position,prop.opts,ctx);
       if(prop.type==='hoop'){model.updateMatrixWorld(true);hoops.push([...model.localToWorld(new T.Vector3(0,4.38,.76))]);}
     }
-    const solids=[];set.updateMatrixWorld(true);
+    const libraryRoot=new T.Group();root.add(libraryRoot);
+    const library=buildLibrary(libraryRoot,data.nodes??[],data.crowds??[],data.time);
+    const solids=[...library.solids];set.updateMatrixWorld(true);
     set.traverse(node=>{if(node.userData.solid){const box=new T.Box3().setFromObject(node);solids.push({min:box.min.toArray(),max:box.max.toArray()});}});
     batch(set);
     const owned=[], models=new Map(), tracks=new Map(), balls=new Map();
@@ -70,8 +75,11 @@ export function createStoryView(canvas, caption, fixedSize) {
         const ball=addProp(live,'ball',[0,0,0],{scale:.77}); balls.set(id,ball);
       }
     }
-    const targetAt=(id,t)=> (tracks.get(id)??tracks.values().next().value)?.(t)
-      ?? {pos:[layout.focus[0],0,layout.focus[2]],yaw:0,low:0};
+    const targetAt=(id,t)=> {
+      const frame=(tracks.get(id)??tracks.values().next().value)?.(t);
+      if(frame)return {...frame,height:5*(bodyScale[timeline.characters.find(c=>c.id===id)?.body??'slim'][1])};
+      return {pos:[layout.focus[0],0,layout.focus[2]],yaw:0,low:0};
+    };
     const shouts=data.actions.filter(e=>e.action==='shout');
     const director=compileCamera(data.cameras,targetAt,time=>shouts.reduce((strength,shot)=>{
       const age=time-shot.t;
@@ -80,14 +88,14 @@ export function createStoryView(canvas, caption, fixedSize) {
     scene.add(root);
     const face=new T.Quaternion(), inverse=new T.Quaternion(), halos=[];
     root.traverse(item=>{if(item.userData.halo)halos.push(item);});
-    stage={root,set,live,owned,models,tracks,balls,director,halos,face,inverse};
+    stage={root,library,set,live,owned,models,tracks,balls,director,halos,face,inverse};
     const overrides=data.light??{};
     key.color.set(typeof overrides.color==='string'?overrides.color:preset.key);
     key.intensity=Number.isFinite(overrides.intensity)?T.MathUtils.clamp(overrides.intensity,0,8):preset.power;
     fill.color.set(preset.fill);
     if(Number.isFinite(overrides.ambient))fill.intensity=T.MathUtils.clamp(overrides.ambient,0,5);
     else fill.intensity=data.time==='night'?.75:1.48;
-    scene.fog=new T.Fog(new T.Color('rgb('+preset.fog.join(',')+')'),22,93);
+    scene.fog=new T.Fog(data.fog?.color??new T.Color('rgb('+preset.fog.join(',')+')'),data.fog?.near??22,data.fog?.far??93);
     scene.userData.world=Object.keys(overrides).length ? {
       ...preset,
       exposure: preset.exposure.map((channel,i)=>{
@@ -111,7 +119,7 @@ export function createStoryView(canvas, caption, fixedSize) {
     if(canvas.width!==width||canvas.height!==height){
       if(renderer)renderer.setSize(width,height,false);else{canvas.width=width;canvas.height=height;}
     }
-    const t=active.localTime;
+    const t=active.localTime; stage.library.update(t);
     for(const [id, { model,pivot,baseShadow }] of stage.models) {
       const frame=stage.tracks.get(id)(t);
       pivot.position.set(frame.pos[0],frame.pos[1]+frame.low,frame.pos[2]);

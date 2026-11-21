@@ -2,6 +2,7 @@ import * as T from './vendor/three.module.min.js';
 import { decal, makeAvatar, part, SLIM } from './slim-avatar.js';
 import { softwarePreview } from './software-preview.js';
 
+import {bodyScale} from './library/validate.js';
 const angles = {
   front: [0, .18, 1],
   side: [1, .18, 0],
@@ -44,7 +45,26 @@ export function buildAvatar(spec) {
   const model = makeAvatar(Object.fromEntries(Object.entries(options).filter(([, value]) => value !== undefined)));
   const { head, torso } = model.parts;
   const [hw, hh] = SLIM.head;
-  const hat = outfit.hat?.toLowerCase() ?? '';
+  model.group.scale.fromArray(bodyScale[spec.body??'slim']);
+  const extras=spec.accessories??[],style=spec.hair;
+  const attach=(parent,w,h,d,col,x,y,z)=>{const piece=part(w,h,d,col);piece.position.set(x,y,z);parent.add(piece);return piece;};
+  if(['short','long','bald','cap','mohawk'].includes(style)){
+    model.hairPieces.forEach(p=>p.visible=false);
+    if(style!=='bald')attach(head,style==='mohawk'?.34:1.32,style==='mohawk'?.67:.32,1.18,style==='cap'?'#38608c':'#23232a',0,.61,0);
+    if(style==='long')for(const x of [-.55,.55])attach(head,.3,1.28,1,'#23232a',x,.02,-.12);
+    if(style==='cap')attach(head,1.43,.13,.62,'#314f77',0,.51,.66);
+  }
+  for(const a of extras){
+    if(a==='glasses'||a==='sunglasses'){
+      for(const x of [-.28,.28]){attach(head,.51,.34,.06,'#243547',x,.06,.59);if(a==='glasses')attach(head,.38,.21,.035,'#a7c9d3',x,.06,.64);}
+      attach(head,.17,.06,.07,'#243547',0,.08,.59);
+    }else if(a==='crown'){attach(head,1.4,.23,1.26,'#f7bd51',0,.91,0);for(const x of [-.54,0,.54])attach(head,.18,.33,.18,'#ffe08b',x,1.12,.49);}
+    else if(a==='headphones'){attach(head,1.49,.15,.29,'#425a70',0,.91,0);for(const x of [-.71,.71])attach(head,.26,.72,.5,'#24354e',x,.28,0);}
+    else if(a==='tie'||a==='suit'){if(a==='suit')for(const x of [-.57,.57])attach(torso,.47,1.94,.84,'#283649',x,0,0);
+      attach(torso,.22,.96,.085,'#a54858',0,.26,.45);}
+    else if(a==='backpack')attach(torso,1.38,1.6,.62,'#875848',0,0,-.64);
+  }
+  const hat = outfit.hat?.toLowerCase() || extras.find(a=>a==='beanie'||a==='party_hat') || '';
   if (hat.includes('beanie')) {
     const crown = part(hw + .22, .40, SLIM.head[2] + .25, '#bd527a');
     crown.position.y = hh / 2 + .53;

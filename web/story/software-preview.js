@@ -54,7 +54,12 @@ export function softwarePreview(T, canvas) {
       if (light.isPointLight) lights.push([light.getWorldPosition(new T.Vector3()), light.intensity]);
     });
     const drawList = [];
-    scene.traverseVisible(mesh => { if (mesh.isMesh && !mesh.userData.shadow) drawList.push(mesh); });
+    scene.traverseVisible(mesh => { if (!mesh.isMesh || mesh.userData.shadow)return;
+      if(!mesh.isInstancedMesh){drawList.push(mesh);return;}
+      for(let i=0;i<mesh.count;i++){
+        const matrix=new T.Matrix4();mesh.getMatrixAt(i,matrix);
+        drawList.push({geometry:mesh.geometry,material:mesh.material,matrixWorld:matrix.premultiply(mesh.matrixWorld)});
+      } });
     if (world) drawList.sort((a,b) => Number(Boolean(a.material.map)) - Number(Boolean(b.material.map)));
     drawList.forEach(mesh => {
       const { position, normal, uv } = mesh.geometry.attributes;
