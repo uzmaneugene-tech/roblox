@@ -1,6 +1,6 @@
 import { connectVideoExport } from './export-ui.js';
 import { example } from './example.js';
-import { expressions } from './registry.js';
+import { setPreviewCharacters } from './character-preview.js?v=pages-tabs';
 import { locateScene, MAX_SOURCE } from './timeline.js';
 
 const HISTORY_KEY = 'framecut.story-history.v1';
@@ -45,16 +45,15 @@ export function startStudio() {
   const $ = name => document.getElementById('story-' + name);
   const code = $('code'), run = $('run'), errors = $('errors'), errorText = $('error');
   const status = message => { $('status').textContent = message; };
-  let history = readHistory(), timeline, avatarViewer, filmViewer, raf = null;
+  let history = readHistory(), timeline, filmViewer, raf = null;
   const updateExport=connectVideoExport({getTimeline:()=>timeline,pauseStory:stop});
-  const angle = $('angle'), expression = $('expression'), character = $('character'), scene = $('scene');
+  const scene = $('scene');
   const scrub = $('time'), play = $('play');
   code.value = readDraft() ?? history[0] ?? example;
   function saveDraft(){
     try{ if(code.value.length<=MAX_SOURCE)localStorage.setItem(DRAFT_KEY,code.value); }catch{}
   }
   code.addEventListener('input',saveDraft);
-  expression.replaceChildren(...expressions.map(value => new Option(value[0].toUpperCase() + value.slice(1), value)));
 
   function updateHistory() {
     $('history').replaceChildren(new Option('Recent versions', ''), ...history.map((value, i) =>
@@ -144,11 +143,6 @@ export function startStudio() {
     raf = requestAnimationFrame(frame);
   };
   addEventListener('hashchange',()=>{if(location.hash!=='#story')stop()});
-  function redraw() {
-    const model = timeline.characters.find(item => item.id === character.value);
-    avatarViewer?.show(model, angle.value, expression.value);
-  }
-  for (const select of [angle, expression, character]) select.onchange = redraw;
   run.onclick = async () => {
     const source = code.value;
     errors.hidden = true;
@@ -171,10 +165,8 @@ export function startStudio() {
       timeline = result.timeline;
       updateExport(timeline);
       scene.replaceChildren(...timeline.scenes.map(s => new Option(s.id, s.id)));
-      character.replaceChildren(...timeline.characters.map(c => new Option(c.name, c.id)));
+      setPreviewCharacters(timeline.characters);
       $('timeline').hidden = !timeline.scenes.length;
-      $('character-controls').hidden = !timeline.characters.length;
-      if (!timeline.scenes.length) $('character-preview').open = Boolean(timeline.characters.length);
       scrub.max = timeline.duration;
       play.disabled = !timeline.scenes.length;
       $('frame').hidden = !timeline.scenes.length;
@@ -189,14 +181,6 @@ export function startStudio() {
       }
       seek(0);
       status(timeline.title + ' · ' + timeline.scenes.length + ' scenes · ' + timeline.characters.length + ' characters');
-      if (timeline.characters.length && !avatarViewer) {
-        try {
-          avatarViewer = (await import('./avatar-view.js')).createAvatarView($('avatar'));
-        } catch {
-          showError({ message: 'Character Preview could not start. Check WebGL and your connection to Three.js.' });
-        }
-      }
-      redraw();
     } finally {
       run.disabled = false;
     }

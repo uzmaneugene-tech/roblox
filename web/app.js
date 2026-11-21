@@ -2,21 +2,18 @@ import {project,MAX_BYTES} from './format.js';
 const $=id=>document.getElementById(id), el=tag=>document.createElement(tag);
 const fresh=name=>({name,caption:'',duration:2,position:[0,2.3,9],rotation:[0,0,0],fov:50,transition:'Cut',shake:0});
 const key='framecut.project.v1';
-let model={format:'framecut-1',shots:[fresh('Shot1')]},index=0,renderPreview,previewStarted=false,storyStarted=false,locationsStarted=false,guideStarted=false,cheatsheetStarted=false,timer;
+let model={format:'framecut-1',shots:[fresh('Shot1')]},index=0,renderPreview,previewStarted=false,storyStarted=false,locationsStarted=false,guideStarted=false,cheatsheetStarted=false,charactersStarted=false,timer;
 function notice(msg){$('notice').textContent=msg;clearTimeout(timer);timer=setTimeout(()=>$('notice').textContent='',4800)}
 try{const saved=localStorage.getItem(key);if(saved)model=project(JSON.parse(saved))}catch{notice('Could not restore the saved project. Import a backup to recover it.')}
 function persist(){try{localStorage.setItem(key,JSON.stringify(model))}catch{notice('Browser storage unavailable or full. Download project JSON to keep your work.')}}
 function action(id,fn){$(id).onclick=async()=>{try{await fn()}catch(e){notice(e.message)}}}
-function route(){
- const pages=['home','builder','converter','guide','captions','story','locations','cheatsheet'];let page=location.hash.slice(1);if(!pages.includes(page))page='home';
- for(const p of pages)$(p).hidden=p!==page;
- document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('active',a.hash==='#'+page));
+function loadView(page){
  if(page==='builder'&&!previewStarted){previewStarted=true;import('./preview.js').then(m=>{renderPreview=m.monitor($('canvas'));preview()}).catch(()=>{$('preview-info').textContent='3D preview unavailable. Check your connection and browser; editing and export still work.'})}
- if(page==='story'&&!storyStarted){storyStarted=true;import('./story/studio.js').then(m=>m.startStudio()).catch(()=>{storyStarted=false;notice('Story Studio could not load. Reload and try again.')})}
- if(page==='locations'&&!locationsStarted){locationsStarted=true;import('./story/world/preview.js').then(m=>m.startLocationPreview()).catch(()=>{locationsStarted=false;notice('Location Preview could not load. Reload and try again.')})}
+ if(page==='story'&&!storyStarted){storyStarted=true;import('./story/studio.js?v=pages-tabs').then(m=>m.startStudio()).catch(error=>{console.error(error);storyStarted=false;notice('Story Studio could not load. Reload and try again.')})}
+ if(page==='locations'&&!locationsStarted){locationsStarted=true;import('./story/world/preview.js').then(m=>m.startLocationPreview()).catch(error=>{console.error(error);locationsStarted=false;notice('Location Preview could not load. Reload and try again.')})}
  if(page==='guide'&&!guideStarted){guideStarted=true;loadGuide()}
  if(page==='cheatsheet'&&!cheatsheetStarted){cheatsheetStarted=true;import('./story/docs-view.js').then(m=>m.cheatsheet()).catch(()=>{$('cheatsheet-manual').textContent='Could not open the Cheatsheet.'})}
- window.scrollTo(0,0);
+ if(page==='characters'&&!charactersStarted){charactersStarted=true;import('./story/character-preview.js?v=pages-tabs').then(m=>m.startCharacterPreview()).catch(error=>{charactersStarted=false;console.error(error);notice('Character Preview could not load. Reload and try again.')})}
 }
 async function loadGuide(){
  try{
@@ -78,4 +75,6 @@ function generate(where,payload){
 action('generate',()=>{project(model);generate('builder',{project:model})});
 action('convert',()=>{const file=$('file').files[0];if((file?.size??$('json').value.length)>MAX_BYTES)throw Error('Maximum input is 32 MiB');generate('converter',file?{file}:{text:$('json').value})});
 $('json').oninput=()=>{$('file').value=''};$('file').onchange=()=>{if($('file').files.length)$('json').value=''};
-draw();route();addEventListener('hashchange',route);
+addEventListener('framecut:view',event=>loadView(event.detail));
+loadView(document.documentElement.dataset.view ?? 'home');
+draw();
