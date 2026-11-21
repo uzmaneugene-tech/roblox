@@ -1,3 +1,4 @@
+import {silhouettes} from './styles.js';
 import {ambienceNames,musicNames,fxNames,transitions,weatherNames,heldItems,danceStyles,compileClock,clockAt,stormTimes} from './phase-two.js';
 import { actions, expressions, locations, props, shots, times } from './registry.js';
 
@@ -14,6 +15,7 @@ const number = (value, name, min, max) => {
   assert(Number.isFinite(value) && value >= min && value <= max, name + ': expected a number from ' + min + ' to ' + max + '.');
   return value;
 };
+const hex=(s,name)=>{assert(typeof s==='string'&&/^#[0-9a-f]{6}$/i.test(s),name+' must be a hex color, e.g. #47aaff.');return s;};
 const vector = (value, name) => {
   assert(Array.isArray(value) && value.length === 3, name + ': expected [x, y, z].');
   return value.map(n => number(n, name, -10000, 10000));
@@ -47,10 +49,13 @@ export function recorder() {
   };
   const catalog=[];
   function preset(opts){
-    object(opts,'character()', ['outfit','hair','skin','body','accessories']);
+    object(opts,'character()', ['outfit','hair','skin','body','style','accessories']);
     const clothes=object(opts.outfit??{},'outfit',['shirt','pants','shoes','hat','shirtText']);
     for(const [key,value] of Object.entries(clothes))if(value!=='')text(value,'outfit.'+key,80);
     for(const key of ['hair','skin'])if(opts[key]!==undefined)text(opts[key],key,80);
+    if(opts.style!==undefined)choice(opts.style,'style',Object.keys(silhouettes));
+    for(const key of ['shirt','pants','shoes'])if(clothes[key])hex(clothes[key],key);
+    if(opts.skin&&!['light','medium','dark'].includes(opts.skin))hex(opts.skin,'skin');
     if(opts.body!==undefined)choice(opts.body,'body',bodies);
     if(opts.accessories!==undefined){assert(Array.isArray(opts.accessories)&&opts.accessories.length<=12,'Expected up to 12 accessories');opts.accessories.forEach(a=>choice(a,'accessory',accessories));}
   }
@@ -87,7 +92,7 @@ export function recorder() {
       }
       for (const key of ['hair', 'skin']) if (opts[key] !== undefined) text(opts[key], key, 80);
       const id = 'character:' + model.characters.length;
-      model.characters.push({ id, name, outfit, body:opts.body, accessories:opts.accessories, hair: opts.hair, skin: opts.skin });
+      model.characters.push({ id, name, outfit, style:opts.style,body:opts.body, accessories:opts.accessories, hair: opts.hair, skin: opts.skin });
       return id;
     },
     open(id, opts) {
@@ -126,6 +131,7 @@ export function recorder() {
       current = null;
     },
   };
+  const placed=char=>assert(current.placements.some(p=>p.char===char),'Place the character first, e.g. s.place(jin,[0,0,0]).');
   const at = t => number(t, 'Scene time (seconds)', 0, current.duration);
   function captionLine(t, caption, opts, char) {
     object(opts, 'Caption', ['speed']);
@@ -139,8 +145,8 @@ export function recorder() {
       return shapeRecord(...args,current.nodes);
     },
     sky(time){current.time=choice(time,'sky time',times);},
-    fog(opts){object(opts,'fog',['near','far','color']); const near=number(opts.near??20,'fog near',0,500); current.fog={near,far:number(opts.far??100,'fog far',near+.1,1000),color:opts.color===undefined?null:text(opts.color,'fog color',30)};},
-    animation(t,char,action,duration){current.actions.push({t:at(t),char:handle(char),action,duration,frames:[]});},
+    fog(opts){object(opts,'fog',['near','far','color']); const near=number(opts.near??20,'fog near',0,500); current.fog={near,far:number(opts.far??100,'fog far',near+.1,1000),color:opts.color===undefined?null:hex(opts.color,'fog color')};},
+    animation(t,char,action,duration){placed(char);current.actions.push({t:at(t),char:handle(char),action,duration,frames:[]});},
     keyframe(frame){current.actions.at(-1).frames.push(frame);},
     crowd(opts){object(opts,'crowd',['count','area','seed','style']);const count=number(opts.count,'crowd count',1,150);
       assert(Number.isInteger(count)&&current.crowds.reduce((n,c)=>n+c.count,0)+count<=150,'Use at most 150 NPCs per scene');
@@ -151,7 +157,7 @@ export function recorder() {
     prop(type, position, opts = {}) {
       object(opts, 'prop()', ['text', 'color', 'rotate', 'scale']);
       if (opts.text !== undefined && opts.text !== '') text(opts.text, 'Prop text', 200);
-      if (opts.color !== undefined) text(opts.color, 'Prop color', 80);
+      if (opts.color !== undefined) hex(opts.color,'Prop color');
       if (opts.rotate !== undefined) Array.isArray(opts.rotate) ? vector(opts.rotate, 'Rotation') : number(opts.rotate, 'Rotation', -3600, 3600);
       if (opts.scale !== undefined) {
         if (Array.isArray(opts.scale)) vector(opts.scale, 'Scale').forEach(n => number(n, 'Scale axis', 0.001, 100));
@@ -169,13 +175,14 @@ export function recorder() {
       if(action==='give')handle(arg);
       if(['hold','pick_up'].includes(action))choice(arg,'held item',heldItems);
       if(action==='dance'&&arg!==null)choice(arg,'dance style',danceStyles);
-      current.actions.push({ t: at(t), char: handle(char), action, arg });
+      placed(char);current.actions.push({ t: at(t), char: handle(char), action, arg });
     },
     cam(t, shot, opts = {}) {
       object(opts, 'cam()', ['from', 'look', 'target', 'face', 'side', 'ease', 'shake', 'cut', 'dist', 'height', 'fov', 'offset', 'targets']);
       for (const key of ['from', 'look', 'offset']) if (opts[key] !== undefined) vector(opts[key], 'Camera ' + key);
       if (opts.target !== undefined) handle(opts.target);
       if(opts.targets!==undefined){assert(Array.isArray(opts.targets)&&opts.targets.length>=2&&opts.targets.length<=32,'Camera targets: provide 2–32 character handles.');opts.targets.forEach(handle);}
+      if(['two_shot','group'].includes(shot))assert(new Set(opts.targets).size>=2,'Use two or more distinct characters, e.g. {targets:[jin,kai]}.');
       if(shot==='two_shot')assert(opts.targets?.length===2,'two_shot needs exactly two targets.');
       for(const [key,min,max] of [['dist',.5,200],['height',.1,150],['fov',12,125]])if(opts[key]!==undefined)number(opts[key],'Camera '+key,min,max);
       if (opts.face !== undefined) assert(typeof opts.face === 'boolean', 'Camera face: expected true or false.');
@@ -186,7 +193,7 @@ export function recorder() {
       current.cameras.push({ t: at(t), shot: choice(shot, 'shot', shots), opts });
     },
     say(t, char, caption, opts = {}) {
-      captionLine(t, caption, opts, handle(char));
+      captionLine(t, caption, opts, handle(char));placed(char);
     },
     narrate(t, caption, opts = {}) {
       captionLine(t, caption, opts);
@@ -195,7 +202,7 @@ export function recorder() {
     dof(opts){object(opts,'dof',['focus','amount']);current.dof={focus:handle(opts.focus),amount:number(opts.amount??.3,'focus amount',0,1)};},
     light(opts) {
       object(opts, 'light()', ['color', 'intensity', 'ambient']);
-      if (opts.color !== undefined) text(opts.color, 'Light color', 80);
+      if (opts.color !== undefined) hex(opts.color,'Light color');
       if (opts.intensity !== undefined) number(opts.intensity, 'Light intensity', 0, 8);
       if (opts.ambient !== undefined) number(opts.ambient, 'Ambient light', 0, 5);
       current.light = opts;
