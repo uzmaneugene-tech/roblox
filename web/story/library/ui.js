@@ -1,3 +1,4 @@
+import {inspection} from './inspection.js';
 import {allItems,customItems,removeItem,saveItems,sources} from './store.js';
 import {execute} from '../execute.js';
 import {createStoryView} from '../story-view.js';
@@ -15,7 +16,7 @@ export function previewCode(item,time='dusk'){
 function saveFile(name,data){const a=document.createElement('a');const url=URL.createObjectURL(new Blob([data],{type:'text/plain'}));a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);}
 export async function startLibrary(){
   const el=id=>document.getElementById('lib-'+id);
-  let items=[],item,view,version=0,raf=0,angle=.47,prev=0,spin=!matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let fresh=false,items=[],item,view,version=0,raf=0,angle=.47,prev=0,spin=!matchMedia('(prefers-reduced-motion: reduce)').matches;
   const state=msg=>{el('status').textContent=msg};
   const error=e=>{el('error').textContent=(e.line?'Line '+e.line+': ':'')+e.message;el('copy-error').hidden=false;};
   const clear=()=>{el('error').textContent='';el('copy-error').hidden=true;};
@@ -26,9 +27,9 @@ export async function startLibrary(){
     if(spin)raf=requestAnimationFrame(draw);
   }
   async function show(name){
-    const id=++version;stop();clear();item=items.find(i=>i.name===name)??demo;
+    const id=++version;stop();clear();fresh=false;item=items.find(i=>i.name===name)??demo;
     el('name').textContent=pretty(item.name);el('meta').textContent=typeLabel(item.type)+' / '+(item.builtin||item===demo?'Bundled':'Your library');
-    el('delete').disabled=item.builtin||item===demo;
+    el('version').replaceChildren(...(item.versions??[]).map((_,i)=>new Option('Version −'+(i+1),i)));el('fork').hidden=true;el('restore').disabled=!item.versions?.length;el('delete').disabled=item.builtin||item===demo;
     el('source').value=item.source??previewCode(demo);el('item').value=name;el('canvas').removeAttribute('data-ready');
     const result=await execute(previewCode(item,el('time').value),sources(items));if(id!==version||location.hash!=='#library')return;
     if(result.error){error(result.error);return;}
@@ -48,8 +49,9 @@ export async function startLibrary(){
   async function copy(text){try{await navigator.clipboard.writeText(text);state('Copied.')}catch{el('copy-text').hidden=false;el('copy-text').value=text;el('copy-text').select();state('Text selected. Use Copy.');}}
   el('copy-error').onclick=()=>copy(el('error').textContent);
   action('copy',async()=>copy(await (await import('../docs-view.js')).libraryReference(await allItems())));
-  action('new',()=>{el('source').value='define.prop("my_prop", (b, o) => {\n  b.box({pos:[0,1,0], scale:[2,2,2], color:o.color ?? "#479ba3"});\n});';el('source').focus();});
-  async function install(records){
+  action('new',()=>{fresh=true;el('source').value='define.prop("my_prop", (b, o) => {\n  b.box({pos:[0,1,0], scale:[2,2,2], color:o.color ?? "#479ba3"});\n});';el('source').focus();});
+  async function install(records,test=false,editing=null){
+    let notices=[];
     if(!Array.isArray(records)||!records.length||records.length>190)throw Error('Import up to 190 definitions at once.');
     const incoming=[],names=new Set();
     for(const record of records){
@@ -57,15 +59,34 @@ export async function startLibrary(){
       const r=await execute('',[{name:record.name??'pasted-item',source}]);if(r.error)throw r.error;
       if(r.catalog.length!==1)throw Error('Use one define block per item. Import multiple items using a Framecut library export.');
       const {name,type}=r.catalog[0];
-      if(names.has(name)||items.some(i=>i.name===name&&i.builtin&&!(heldItems.includes(name)&&name!=='briefcase'))||name===demo.name)throw Error(name+': duplicate or reserved bundled name. Rename your item.');
+      const duplicate=items.find(i=>i.name===name);
+      if(!test&&(names.has(name)||name===demo.name||['story','scene','define','character'].includes(name)||duplicate&&(duplicate.builtin||editing&&editing!==name))){
+        let k=2;while(items.some(i=>i.name===name+'_'+k))k++;
+        const nextName=name+'_'+k,fork=el('fork');fork.hidden=false;fork.textContent='Save as '+nextName;
+        fork.onclick=async()=>{const updated=el('source').value.replace(/(define\.\w+\s*\(\s*["'])([\w-]+)(["'])/,(_,a,n,b)=>a+nextName+b);
+          if(updated===el('source').value)return error(Error('Rename the definition in the editor first.'));
+          el('source').value=updated;try{await install([{source:updated}]);}catch(e){error(e);}};
+        throw Error(name+': duplicate or reserved name. Choose '+nextName+' to save a separate item.');
+      }
       names.add(name);incoming.push({name,type,source});
     }
     const next=[...items.filter(i=>!names.has(i.name)),...incoming];
     // Validate callbacks and dependencies together before committing the entire import.
-    for(const i of incoming){const r=await execute(previewCode(i),sources(next));if(r.error)throw r.error;}
-    await saveItems(incoming);el('type').value='all';await reload(incoming[0].name);state('Saved '+incoming.length+' item(s) on this device.');
+    const failures=[];
+    for(const i of incoming){const r=await execute(previewCode(i),sources(next));
+      if(r.error){failures.push(r.error);continue;}
+      notices.push(...(r.warnings??[]).map(w=>'Line '+w.line+': '+w.message));
+      if(test){view??=createStoryView(el('canvas'),null);view.setTimeline(r.timeline);view.render(0,{angle:.47});stop();
+        state(inspection(r.timeline.scenes[0],...view.inspect())+'\n'+notices.join('\n'));
+        if(i.type==='animation'){spin=true;el('spin').textContent='Pause rotation';draw(performance.now());}return;}
+    }
+    if(failures.length)throw {message:failures.map(e=>e.message).join('\n\n'),line:failures[0].line};
+    await saveItems(incoming);el('type').value='all';await reload(incoming[0].name);state('Saved '+incoming.length+' item(s) on this device.\n'+notices.join('\n'));
   }
-  action('save',()=>install([{source:el('source').value}]));
+  action('test',()=>install([{source:el('source').value}],true));
+  action('restore',async()=>{const previous=item.versions?.[Number(el('version').value)];if(previous)await install([previous]);});
+  action('save',()=>install([{source:el('source').value}],false,fresh?'(new)':item?.name));
+
   action('delete',async()=>{await removeItem(item.name);el('type').value='all';await reload('tower');state('Item deleted.');});
   const delimiter='\n// --- Framecut library item ---\n';
   action('json',async()=>saveFile('framecut-library.json',JSON.stringify({version:1,items:await customItems()},null,2)));

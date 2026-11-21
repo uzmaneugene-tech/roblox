@@ -23,7 +23,11 @@ export const allItems=async()=>{
   const defaults=await builtins(),custom=await customItems(),names=new Set(custom.map(item=>item.name));
   return [...defaults.filter(item=>!names.has(item.name)),...custom];
 };
-export const saveItems=items=>transaction('readwrite',s=>{for(const item of items)s.put(item)});
+export const saveItems=items=>transaction('readwrite',s=>{for(const item of items){
+  const q=s.get(item.name);q.onsuccess=()=>{const prev=q.result;
+    const versions=prev&&prev.source!==item.source?[{type:prev.type,source:prev.source},...(prev.versions??[])].slice(0,10):prev?.versions??[];
+    s.put({...item,versions});};
+}});
 export const removeItem=name=>transaction('readwrite',s=>s.delete(name));
 export const sources=items=>{
   const unique=new Map();

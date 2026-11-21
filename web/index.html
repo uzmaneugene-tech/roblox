@@ -15,7 +15,7 @@
       <textarea id="story-code" rows="15" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
       <div class="actions story-actions">
         <button id="story-run" class="primary">Run</button>
-        <button id="story-sample">Load sample</button>
+        <button id="story-check">Check story</button><button id="story-sample">Load sample</button>
         <button id="story-phase-two">Load sound and effects sample</button>
         <a href="#cheatsheet">Story Code reference</a>
         <button id="story-export">Export .js</button>
@@ -87,6 +87,13 @@
 </section>
 <section id="characters" hidden>
   <h1>Character Preview</h1>
+  <details class="pane" id="style-lineup"><summary>Style Lineup</summary>
+    <h2>Jin · same scale</h2><div class="style-row"></div>
+    <label>Inspect style <select aria-label="Inspect style"></select></label>
+    <div class="style-sheet"></div><div class="face-row"></div>
+    <button>Play walk / wave / sit</button> <output class="style-motion"></output>
+    <canvas class="style-body" aria-label="Motion test"></canvas><canvas class="style-face" aria-hidden="true"></canvas>
+  </details>
   <div class="character-pane pane">
       <p>Inspect Jin or the characters from your latest Story Studio run.</p>
       <canvas id="story-avatar" width="360" height="640" aria-label="Portrait 3D character preview"></canvas>
@@ -110,7 +117,7 @@
     <div class="actions"><label>Time <select id="lib-time"><option>day</option><option selected>dusk</option><option>night</option></select></label><button id="lib-spin">Pause rotation</button></div></figure>
   </div>
   <div class="pane"><label for="lib-source">Definition</label><textarea id="lib-source" rows="8" spellcheck="false"></textarea>
-    <div class="actions"><button id="lib-new">New item</button><button id="lib-save" class="primary">Save definition</button><button id="lib-delete" disabled>Delete item</button></div>
+    <div class="actions"><button id="lib-test">Test item</button><select id="lib-version" aria-label="Previous versions"></select><button id="lib-restore">Restore previous version</button><button id="lib-fork" hidden></button><button id="lib-new">New item</button><button id="lib-save" class="primary">Save definition</button><button id="lib-delete" disabled>Delete item</button></div>
     <p>Exports contain your saved items. Bundled items are already available on every device.</p>
     <div class="actions"><button id="lib-json">Export library .json</button><button id="lib-js">Export library .js</button><label class="button">Import library<input id="lib-import" type="file" accept=".json,.js"></label><button id="lib-copy">Copy library cheatsheet</button></div>
     <p id="lib-status" role="status"></p><pre id="lib-error" role="alert"></pre><button id="lib-copy-error" hidden>Copy error</button><textarea id="lib-copy-text" readonly hidden></textarea>

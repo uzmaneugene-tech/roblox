@@ -331,7 +331,32 @@ Video and audio stay on the device. WebCodecs exports each frame at its exact ti
 | microphone | `s.do(1,jin,"hold","microphone")` |
 | umbrella | `s.do(1,jin,"hold","umbrella")` |
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:5237141b6daef0981a279c8eb94a37c6e956b73bfbcbe78df969633c0018376b -->
+
 For dance, use `"shuffle"`, `"robot"` or `"spin"`. Hold an item before `give`, and place the recipient within reach. Use character handles for hug, push and give. The held items are also standalone library props, for example `s.spawn("phone",[0,0,0],{color:"#28364d"})`.
+
+## Character styles and checks
+
+Style changes proportions. Body still sets overall size. Skin, hair, accessories, outfit, face expressions and all actions work with each style.
+
+| Style | Example | Rig |
+|---|---|---|
+| Slim (default) | `character("Jin",{style:"slim"})` | The original approved avatar. |
+| Classic | `character("Host",{style:"classic"})` | Classic R6 sizes, solid straight limbs. |
+| R15 | `character("Dancer",{style:"r15"})` | Segmented waist and limbs; animated elbows and knees. |
+| Thin | `character("Model",{style:"thin"})` | Taller legs, narrower torso and smaller head. |
+| Chunky | `character("Kid",{style:"chunky"})` | Short thick limbs and a larger head. |
+
+Presets can specify style: `define.character("model",{style:"thin",body:"tall"})`. All styles keep head, torso, armL/R and legL/R. For example: `define.animation("bend",(rig,t)=>{rig.elbowR.rotation.x=-Math.sin(t);rig.kneeL.rotation.x=.4;})`. Extra pivots accept rotations on every style; only R15 shows them.
+
+**Check story** validates without changing the preview; **Run** applies the same checks before rendering. Place actors before actions or speech. Group shots need at least two different targets; two_shot needs exactly two. Use hex colors, positive scales, and three-number vectors. Story prop/spawn rotate is in degrees; for example, s.spawn("bench",[0,0,0],{rotate:90}). Library rot and existing spawn rot options use radians. Safe conversions (such as `scale:["2"]`, `#abc`, or an avoid circle given as [x,y,z,radius]) appear as notices. Copy error includes the diagnostics and source snippets. Syntax problems can prevent runtime checks: correct them and check again. Code inside unexecuted JavaScript branches can depend on runtime values; only literal Library dependencies are checked without running the branch.
+
+In **Library**, **Test item** previews the editor contents without saving. It reports size and ground contact, meshes and lights, phone budget warnings and sampled animation issues. Save validates before replacing an item. The version selector and **Restore previous version** recover up to ten previous definitions. For a reserved name or a collision, use the suggested numbered copy. In **Character Preview → Style Lineup**, compare Jin at the same scale, inspect a style's four views and five faces, then play the walk, wave and sit test.
+
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 
 

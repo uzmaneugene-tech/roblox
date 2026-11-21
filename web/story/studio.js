@@ -131,6 +131,14 @@ export function startStudio() {
     raf = requestAnimationFrame(frame);
   };
   addEventListener('hashchange',()=>{if(location.hash!=='#story')stop()});
+  const summary=r=>{
+    const t=r.timeline,names=new Set(t.scenes.flatMap(s=>[s.location,...s.props.map(p=>p.type),...s.nodes.map(n=>n.name)]));
+    return t.title+' · '+t.scenes.length+' scenes · '+t.duration.toFixed(2)+' seconds · '+t.characters.length+' characters\nItems: '+[...names].join(', ')+(r.warnings?.length?'\nNotices: '+r.warnings.map(w=>'Line '+w.line+': '+w.message).join('\n'):'\nNo warnings.');
+  };
+  $('check').onclick=async()=>{const button=$('check');button.disabled=true;try{
+    const r=await execute(code.value);if(r.error){showError(r.error);status('Check failed.');}
+    else {errors.hidden=true;status(summary(r));}
+  }finally{button.disabled=false;}};
   run.onclick = async () => {
     if(sound.checked)audio.unlock();
     const source = code.value;
@@ -169,7 +177,7 @@ export function startStudio() {
         }
       }
       seek(0);
-      status(timeline.title + ' · ' + timeline.scenes.length + ' scenes · ' + timeline.characters.length + ' characters');
+      status(summary(result));
     } finally {
       run.disabled = false;
     }

@@ -1,3 +1,4 @@
+import {checkStyleTools} from './style-checks.mjs';
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 
@@ -70,6 +71,8 @@ try {
     await page.locator('#lib-source').fill(src);
     await page.locator('#lib-save').tap();
     await page.locator('#lib-canvas[data-ready="ci_marker"]').waitFor({timeout:15000});
+    await page.waitForFunction(()=>document.querySelector('#lib-status').textContent.startsWith('Saved '));
+    await page.waitForLoadState('networkidle');
     await page.reload();
     await page.locator('#lib-canvas[data-ready="tower"]').waitFor();
     await page.locator('#lib-item option[value="ci_marker"]').waitFor({state:'attached'});
@@ -137,6 +140,7 @@ try {
     await page.locator('#story-scene').selectOption('Thunder Break');
     assert.equal(await page.locator('#story-film').getAttribute('data-shot'),'two_shot');
   });
+  await check('Draft checks, item inspection, safe save and restore',()=>checkStyleTools(browser,base));
   assert.equal(errors.length, 0, errors.join('\n'));
   console.log(`${checks.length} checks passed at ${base}; no console errors, failed requests or script MIME errors.`);
 } finally {
