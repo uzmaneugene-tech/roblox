@@ -1,11 +1,97 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101211"><title>Framecut — Cinematic Studio</title><link rel="stylesheet" href="./style.css"><script type="module" src="./app.js"></script></head><body>
-<header><a class="brand" href="#home"><i class="brandmark" aria-hidden="true">◩</i> FRAMECUT <small>/ STUDIO</small></a><nav aria-label="Main navigation"><a href="#home">Overview</a><a href="#builder">Shot Builder</a><a href="#converter">Converter</a><a href="#guide">Guide</a></nav><span class="online"><b></b> STUDIO ONLINE</span></header>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101211"><title>Framecut — Cinematic Studio</title><link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./story/studio.css"><script type="module" src="./app.js"></script></head><body>
+<header><a class="brand" href="#home"><i class="brandmark" aria-hidden="true">◩</i> FRAMECUT <small>/ STUDIO</small></a><nav aria-label="Main navigation"><a href="#story">Story Studio</a><a href="#locations">Location Preview</a><a href="#cheatsheet">Cheatsheet</a><a href="#home">Overview</a><a href="#builder">Shot Builder</a><a href="#converter">Converter</a><a href="#guide">Guide</a></nav><span class="online"><b></b> STUDIO ONLINE</span></header>
 <main><section id="home"><div class="hero"><div class="hero-copy"><div class="eyebrow"><span></span> BLENDER × ROBLOX</div><h1>Cinematic<br><em>Studio.</em></h1><p>Build your story shot by shot. Create cinematic camera sequences for Roblox, in Blender or right in your browser.</p><div class="actions"><a class="primary" download href="./downloads/roblox_cinematic_exporter.zip">↓ &nbsp;Download add-on</a><a class="secondary" href="#guide">Read the guide ↗</a></div></div>
 <figure class="monitor"><div class="screen"><div class="viewtop"><span class="rec">● REC</span><span>CAM A &nbsp; / &nbsp; 24 FPS</span></div><div class="reticle">+</div><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><div class="viewbottom">SC. 01 &nbsp; / &nbsp; EXT. CANYON</div></div><figcaption><span><b></b> CAMERA MONITOR</span><span>00:00:04:12</span></figcaption></figure></div>
 <div class="section-title"><div><div class="eyebrow"><span></span> WORKSPACE</div><h2>Studio tools</h2></div><small>01 — 03</small></div>
 <div class="cards"><a href="#builder"><small>TOOL / 01</small><i>▤</i><h3>Shot Builder</h3><p>Frame your camera, sequence shots, and preview your scene in 3D.</p><strong>Open builder ↗</strong></a><a href="#converter"><small>TOOL / 02</small><i>{ }</i><h3>JSON Converter</h3><p>Turn a Blender JSON export into ready-to-paste Luau modules.</p><strong>Open converter ↗</strong></a><a href="#captions"><small>TOOL / 03</small><i>Cc</i><h3>Caption Writer</h3><p>Write your story line by line and assign captions to your shot list.</p><strong>Open writer ↗</strong></a></div></section>
+<section id="story" hidden>
+  <div class="eyebrow"><span></span> FRAMECUT STUDIO</div>
+  <h1>Story Studio</h1>
+  <p>Paste JavaScript written for the Story Code API. Run it to build a timeline and inspect its characters.</p>
+  <div class="story-grid">
+    <div class="story-editor">
+    <div class="pane">
+      <label for="story-code">Story Code</label>
+      <textarea id="story-code" rows="15" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+      <div class="actions story-actions">
+        <button id="story-run" class="primary">Run</button>
+        <button id="story-sample">Load sample</button>
+        <a href="#cheatsheet">Story Code reference</a>
+        <button id="story-export">Export .js</button>
+        <label class="button">Import .js<input type="file" id="story-import" accept=".js,text/javascript"></label>
+      </div>
+      <label for="story-history">Code history</label>
+      <select id="story-history"><option value="">Recent versions</option></select>
+      <p id="story-status" role="status"></p>
+      <div id="story-errors" hidden>
+        <pre id="story-error" role="alert"></pre>
+        <button id="story-copy-error">Copy error</button>
+      </div>
+      <div id="story-timeline" hidden>
+        <div class="actions story-actions">
+          <button id="story-play" disabled>Play</button>
+          <select id="story-scene" aria-label="Jump to scene"></select>
+        </div>
+        <label for="story-time">Timeline <output id="story-time-label"></output></label>
+        <input type="range" id="story-time" min="0" max="0" step="0.001" value="0">
+      </div>
+    </div>
+    <div id="export-panel" class="pane export-panel" hidden>
+      <h2>Export video</h2>
+      <label>Resolution <select id="export-size"><option value="1920">1080 × 1920</option><option value="1280">720 × 1280</option></select></label>
+      <label>Optional voiceover (MP3, WAV, M4A) <input id="export-voice" type="file" accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/mp4"></label>
+      <label>Voiceover starts at (seconds) <input id="export-offset" type="number" min="0" step="0.01" value="0"></label>
+      <label class="export-effects"><input id="export-effects" type="checkbox"> Include placeholder sound effects</label>
+      <p>Portrait, 30 fps. Exports on this device.</p>
+      <div class="actions story-actions">
+        <button id="export-start" class="primary">Export video</button>
+        <button id="export-cancel" hidden>Cancel</button>
+        <a id="export-download" class="secondary" hidden>Download video</a>
+      </div>
+      <progress id="export-progress" max="100" value="0" aria-label="Video export progress" hidden></progress>
+      <p id="export-status" role="status"></p>
+    </div>
+    </div>
+    <div class="pane">
+      <h2>Story Preview</h2>
+      <div id="story-frame" class="story-frame" hidden>
+        <canvas id="story-film" width="360" height="640" aria-label="Story playback preview"></canvas>
+        <span id="story-caption" class="story-word"></span>
+      </div>
+      <details id="story-character-preview">
+      <summary>Character Preview</summary>
+      <p>Inspect the avatar design before any environments are built.</p>
+      <canvas id="story-avatar" width="360" height="640" aria-label="Portrait 3D character preview"></canvas>
+      <div id="story-character-controls" class="story-looks" hidden>
+        <label>Character <select id="story-character"></select></label>
+        <label>View <select id="story-angle"><option value="three-quarter">Three-quarter</option><option value="front">Front</option><option value="side">Side</option><option value="back">Back</option></select></label>
+        <label>Expression <select id="story-expression"></select></label>
+      </div>
+      </details>
+    </div>
+  </div>
+</section>
+<section id="cheatsheet" hidden>
+  <div class="eyebrow"><span></span> STORY CODE</div>
+  <div class="actions"><button id="cheatsheet-copy" class="primary" disabled>Copy cheatsheet</button></div>
+  <p id="cheatsheet-status" role="status"></p>
+  <textarea id="cheatsheet-text" aria-label="Cheatsheet text for copying" rows="12" readonly hidden></textarea>
+  <article id="cheatsheet-manual">Loading cheatsheet…</article>
+</section>
+<section id="locations" hidden>
+  <div class="eyebrow"><span></span> PROCEDURAL SETS</div>
+  <h1>Location Preview</h1>
+  <p>Pick a set and time of day. Drag to orbit or use the arrow keys on the preview. Jin stands in the scene for scale.</p>
+  <div class="location-controls">
+    <label>Location <select id="location-name"></select></label>
+    <label>Time of day <select id="location-time"><option value="day">Day</option><option value="dusk" selected>Dusk</option><option value="night">Night</option></select></label>
+    <label>Camera <select id="location-angle"><option value="overview">Overview</option><option value="eye">Eye level</option></select></label>
+    <button id="location-reset">Reset view</button>
+  </div>
+  <canvas id="location-canvas" tabindex="0" aria-label="3D location preview" width="960" height="540"></canvas>
+</section>
 <section id="builder" hidden><div class="eyebrow"><span></span> TOOL / 01</div><h1>Shot Builder</h1><p>Compose in Roblox world coordinates. Your valid edits are saved on this device.</p><div class="actions"><button id="add">+ Add shot</button><button id="export-project">Download project JSON</button><label class="button">Import project JSON<input type="file" id="import-project" accept=".json"></label><a href="#captions">Caption Writer ↗</a></div><div class="editor"><aside class="pane"><h3>Shot list</h3><div id="shot-list"></div></aside><div class="pane"><h3>Shot settings</h3><form id="fields"></form><div class="actions"><button id="up">↑ Move up</button><button id="down">↓ Move down</button><button id="duplicate">Duplicate</button><button id="delete">Delete</button></div></div><div class="pane preview"><h3>Camera monitor</h3><canvas id="canvas" aria-label="Portrait camera preview"></canvas><p id="preview-info">9:16 · Y up · Camera looks along −Z</p></div></div><button class="primary" id="generate">Generate Luau →</button><div id="builder-result"></div></section>
 <section id="converter" hidden><div class="eyebrow"><span></span> TOOL / 02</div><h1>JSON Converter</h1><p>Convert Blender export data locally. For large files, choose a file instead of pasting (32 MiB maximum).</p><label>Blender JSON<textarea id="json" rows="9" spellcheck="false"></textarea></label><div class="actions"><input type="file" id="file" accept=".json"><button class="primary" id="convert">Generate Luau →</button></div><div id="converter-result"></div></section>
-<section id="captions" hidden><div class="eyebrow"><span></span> TOOL / 03</div><h1>Caption Writer</h1><p>Write one line per shot in list order. Leave a line blank for silence.</p><label>Story lines<textarea id="story" rows="9"></textarea></label><div class="actions"><button class="primary" id="assign">Assign to shots →</button><a href="#builder">Back to builder ↗</a></div></section>
+<section id="captions" hidden><div class="eyebrow"><span></span> TOOL / 03</div><h1>Caption Writer</h1><p>Write one line per shot in list order. Leave a line blank for silence.</p><label>Story lines<textarea id="caption-lines" rows="9"></textarea></label><div class="actions"><button class="primary" id="assign">Assign to shots →</button><a href="#builder">Back to builder ↗</a></div></section>
 <section id="guide" hidden><div class="eyebrow"><span></span> STUDIO MANUAL</div><article id="manual">Loading guide…</article><div class="actions"><a download href="./downloads/CutscenePlayer.lua">Download player ↓</a><a download href="./downloads/StartCutscene.client.lua">Download LocalScript ↓</a></div></section><div id="notice" role="status" aria-live="polite"></div></main>
 <footer><span>◩ &nbsp; FRAMECUT STUDIO</span><span>BLENDER → ROBLOX &nbsp; / &nbsp; V1.0</span></footer></body></html>
