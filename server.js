@@ -1,0 +1,13 @@
+import express from 'express';
+import MarkdownIt from 'markdown-it';
+import {readFileSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
+const root=fileURLToPath(new URL('.',import.meta.url));
+const app=express(),md=new MarkdownIt({html:false});
+app.disable('x-powered-by');
+app.get('/health',(_req,res)=>res.json({status:'ok'}));
+app.get('/guide-content',(_req,res)=>res.type('html').send(['guide','troubleshooting'].map(n=>md.render(readFileSync(root+'docs/'+n+'.md','utf8').replace(/<!--.*?-->/gs,''))).join('\n')));
+app.use('/downloads',express.static(root+'blender-addon'),express.static(root+'roblox'));
+app.use('/three',express.static(root+'node_modules/three/build'));
+app.use(express.static(root+'web'));
+app.listen(process.env.PORT||3000,'0.0.0.0',()=>console.log('Framecut studio listening on '+(process.env.PORT||3000)));
