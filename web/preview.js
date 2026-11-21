@@ -1,4 +1,4 @@
-import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import * as T from './story/vendor/three.module.min.js';
 export function monitor(canvas){
   let renderer;
   if(canvas.getContext('webgl2',{antialias:true})){
