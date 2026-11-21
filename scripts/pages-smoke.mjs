@@ -57,6 +57,7 @@ try {
   });
   await check('Custom library item survives reload and round-trips through JSON and JavaScript', async () => {
     await nav.getByRole('link',{name:'Library',exact:true}).tap();
+    await page.locator('#lib-canvas[data-ready="tower"]').waitFor();
     await page.locator('#lib-source').fill('define.prop("bad_item", b=>{\n b.box({rough:3});\n});');
     await page.locator('#lib-save').tap();
     await page.locator('#lib-copy-error:not([hidden])').waitFor();
@@ -70,6 +71,7 @@ try {
     await page.locator('#lib-save').tap();
     await page.locator('#lib-canvas[data-ready="ci_marker"]').waitFor({timeout:15000});
     await page.reload();
+    await page.locator('#lib-canvas[data-ready="tower"]').waitFor();
     await page.locator('#lib-item option[value="ci_marker"]').waitFor({state:'attached'});
     await page.locator('#lib-item').selectOption('ci_marker');
     await page.locator('#lib-canvas[data-ready="ci_marker"]').waitFor();
@@ -78,12 +80,14 @@ try {
       const file=await download, path=await file.path();
       await page.locator('#lib-delete').tap();
       await page.locator('#lib-item option[value="ci_marker"]').waitFor({state:'detached'});
+    await page.locator('#lib-canvas[data-ready="tower"]').waitFor();
       const {readFile}=await import('node:fs/promises');
       await page.locator('#lib-import').setInputFiles({name:file.suggestedFilename(),mimeType:'text/plain',buffer:await readFile(path)});
       await page.locator('#lib-canvas[data-ready="ci_marker"]').waitFor({timeout:15000});
     }
     await page.locator('#lib-delete').tap();
     await page.locator('#lib-item option[value="ci_marker"]').waitFor({state:'detached'});
+    await page.locator('#lib-canvas[data-ready="tower"]').waitFor();
   });
   await check('Sample story renders', async () => {
     await nav.getByRole('link',{name:'Story Studio',exact:true}).tap();

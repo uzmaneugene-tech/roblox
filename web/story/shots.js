@@ -33,10 +33,14 @@ function cameraPos(event, at, elapsed, ids) {
   }
   if(shot==='over_shoulder'){
     const other=people.find(id=>id!==(o.target??people[0]));
+    let shoulder=1.7*unit;
     if(other){const a=at(other);look=[a.pos[0],a.pos[1]+(a.height??5)*.84+a.low,a.pos[2]];
-      angle=Math.atan2(look[0]-pos[0],look[2]-pos[2]);}
+      const dx=look[0]-pos[0],dz=look[2]-pos[2],gap=Math.hypot(dx,dz);
+      // Reserve shoulder/face clearance where the sightline crosses the near actor.
+      shoulder=Math.min(dist,1.65*unit*(1+dist/Math.max(gap,1)));
+      angle=Math.atan2(dx,dz);}
     else look=[pos[0]+Math.sin(angle)*6,pos[1]+4*unit,pos[2]+Math.cos(angle)*6];
-    center=[pos[0]+side*1.7*Math.cos(angle),pos[1],pos[2]-side*1.7*Math.sin(angle)];angle+=Math.PI;
+    center=[pos[0]+side*shoulder*Math.cos(angle),pos[1],pos[2]-side*shoulder*Math.sin(angle)];angle+=Math.PI;
   }
   const from=o.from??[center[0]+dist*Math.sin(angle),center[1]+height,center[2]+dist*Math.cos(angle)];
   return {from:from.map((v,i)=>v+(o.offset?.[i]??0)),look:o.look??look,fov};

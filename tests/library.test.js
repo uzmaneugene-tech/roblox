@@ -51,3 +51,12 @@ test('the copied Library recipes run unchanged',async()=>{
   for(const source of blocks){const r=await runStory(source,{library:[...library,...blocks.slice(0,i).filter(s=>s.startsWith('define.')).map((source,j)=>({name:'kit'+j,source}))]});assert.equal(r.error,undefined,JSON.stringify(r.error));i++;}
   assert.ok(i>=4);
 });
+test('over-shoulder keeps the far face exposed beside the foreground silhouette',()=>{
+  for(const separation of [3,5,8]){
+    const at=id=>({pos:[0,0,id==='b'?separation:0],yaw:0,low:0});
+    const frame=compileCamera([{t:0,shot:'over_shoulder',opts:{targets:['a','b']}}],at,()=>0,['a','b'])(0);
+    const crossing=separation/(separation-frame.from[2]);
+    assert.ok(Math.abs(frame.from[0])*crossing>=1.55);
+    assert.deepEqual(frame.look,[0,4.2,separation]);
+  }
+});
