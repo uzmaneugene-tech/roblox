@@ -53,6 +53,8 @@ export function createStoryView(canvas, caption, fixedSize) {
       const model=addProp(set,prop.type,prop.position,prop.opts,ctx);
       if(prop.type==='hoop'){model.updateMatrixWorld(true);hoops.push([...model.localToWorld(new T.Vector3(0,4.38,.76))]);}
     }
+    const solids=[];set.updateMatrixWorld(true);
+    set.traverse(node=>{if(node.userData.solid){const box=new T.Box3().setFromObject(node);solids.push({min:box.min.toArray(),max:box.max.toArray()});}});
     batch(set);
     const owned=[], models=new Map(), tracks=new Map(), balls=new Map();
     const placed=new Map(data.placements.map(p=>[p.char,p.position]));
@@ -74,7 +76,7 @@ export function createStoryView(canvas, caption, fixedSize) {
     const director=compileCamera(data.cameras,targetAt,time=>shouts.reduce((strength,shot)=>{
       const age=time-shot.t;
       return Math.max(strength,age>=0&&age<1.1?smooth(age/.15)*(1-smooth((age-.16)/.94)):0);
-    },0));
+    },0),[...placed.keys()],solids);
     scene.add(root);
     const face=new T.Quaternion(), inverse=new T.Quaternion(), halos=[];
     root.traverse(item=>{if(item.userData.halo)halos.push(item);});
@@ -123,7 +125,7 @@ export function createStoryView(canvas, caption, fixedSize) {
       if(ball){ball.visible=Boolean(frame.ball);if(frame.ball)ball.position.set(frame.ball[0],frame.ball[1]-.34,frame.ball[2]);}
     }
     const view=stage.director(t);
-    camera.aspect=width/height;
+    camera.aspect=width/height;camera.fov=view.fov;
     camera.position.fromArray(view.from);camera.userData.focus.fromArray(view.look);camera.lookAt(camera.userData.focus);
     camera.updateProjectionMatrix();camera.getWorldQuaternion(stage.face);
     for(const glow of stage.halos)glow.quaternion.copy(glow.parent.getWorldQuaternion(stage.inverse).invert()).multiply(stage.face);

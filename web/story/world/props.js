@@ -192,6 +192,7 @@ export function addProp(parent, type, position, options = {}, context = { glows:
   if (Array.isArray(options.scale)) group.scale.set(...options.scale);
   else group.scale.setScalar(options.scale ?? 1);
   propRegistry[type](group,options,context);
+  group.userData.solid=['house','car','bench'].includes(type);
   parent.add(group);
   return group;
 }

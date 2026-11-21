@@ -1,7 +1,9 @@
 export const example = `story({ title: "The Summer Party Game", aspect: "9:16", fps: 30 });
 const jin = character("Jin");
+const kai = character("Kai", {outfit:{shirt:"#357971"}});
 
 scene("Summer Party Game", { location: "basketball_court", time: "dusk", duration: 27 }, s => {
+  s.place(kai, [-4, .1, 1]);
   s.place(jin, [0, 0.1, 3]);
   s.prop("bench", [4, 0.1, 7.3], { color: "#c58f68" });
 
@@ -36,5 +38,9 @@ scene("Summer Party Game", { location: "basketball_court", time: "dusk", duratio
   s.cam(21.6, "static", { from: [9.3, 4.5, 17.0], look: [4, 2.45, 7.4], cut: true });
   s.do(21.65, jin, "run_to", [4, 0.1, 7.3]);
   s.do(24.3, jin, "sit");
+  s.cam(23,"two_shot",{targets:[jin,kai]});
+  s.cam(24,"group",{targets:[jin,kai]});
+  s.cam(25,"orbit",{target:jin});
+  s.cam(26,"crane_up",{target:jin});
   s.say(24.7, jin, "A well earned rest", { speed: 1.5 });
 });`;

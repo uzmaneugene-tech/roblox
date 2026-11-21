@@ -124,9 +124,12 @@ export function recorder() {
       current.actions.push({ t: at(t), char: handle(char), action, arg });
     },
     cam(t, shot, opts = {}) {
-      object(opts, 'cam()', ['from', 'look', 'target', 'face', 'side', 'ease', 'shake', 'cut']);
-      for (const key of ['from', 'look']) if (opts[key] !== undefined) vector(opts[key], 'Camera ' + key);
+      object(opts, 'cam()', ['from', 'look', 'target', 'face', 'side', 'ease', 'shake', 'cut', 'dist', 'height', 'fov', 'offset', 'targets']);
+      for (const key of ['from', 'look', 'offset']) if (opts[key] !== undefined) vector(opts[key], 'Camera ' + key);
       if (opts.target !== undefined) handle(opts.target);
+      if(opts.targets!==undefined){assert(Array.isArray(opts.targets)&&opts.targets.length>=2&&opts.targets.length<=32,'Camera targets: provide 2–32 character handles.');opts.targets.forEach(handle);}
+      if(shot==='two_shot')assert(opts.targets?.length===2,'two_shot needs exactly two targets.');
+      for(const [key,min,max] of [['dist',.5,200],['height',.1,150],['fov',12,125]])if(opts[key]!==undefined)number(opts[key],'Camera '+key,min,max);
       if (opts.face !== undefined) assert(typeof opts.face === 'boolean', 'Camera face: expected true or false.');
       if (opts.side !== undefined) choice(opts.side, 'camera side', ['left', 'right']);
       if (opts.ease !== undefined) number(opts.ease, 'Camera ease (seconds)', 0, 10);

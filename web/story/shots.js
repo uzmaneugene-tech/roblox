@@ -1,49 +1,81 @@
 import { mix, smooth } from './motion.js';
 
-const cameraPos = (s, t) => {
-  const { shot, opts } = s;
-  const pose = t(opts.target);
-  const { pos, yaw, low } = pose;
-  const x = pos[0], y = pos[1], z = pos[2];
-  const face = opts.face === false ? yaw + Math.PI : yaw;
-  const side = opts.side === 'left' ? -1 : 1;
-  const offset = (l,h,f) => [x+l*Math.cos(face)+f*Math.sin(face),y+h,z-l*Math.sin(face)+f*Math.cos(face)];
-  const head = y + 4.65 + low;
-  const upper = y + 3.35 + low*.8;
-  const body = y + 2.72 + low*.72;
-  let from, look;
-  switch (shot) {
-    case 'close_up': from=offset(side*.08,head-y+.13,2.49);look=[x,head,z];break;
-    case 'tracking': from=offset(side*9.2,3.48+low*.4,.65);look=[x,body,z];break;
-    case 'over_shoulder': from=offset(side*.81,4.55+low,-3.0);look=offset(-.17,3.5+low,6);break;
-    case 'low_angle': from=offset(side*1.7,1.35,7.3);look=[x,upper-.32,z];break;
-    case 'static': from=[x+3,y+4.7,z+11.0];look=[x,body,z];break;
-    case 'medium': from=offset(side*1.25,4.12+low*.4,7.2);look=[x,upper-.24,z];break;
-    default: from=offset(side*4.4,6.4,12.8);look=[x,body+.15,z];break;
-  }
-  return {from:opts.from??from,look:opts.look??look};
+// Default distances are in studs for a five-stud actor; lenses are vertical FOV.
+export const lenses = {
+  wide:[26,7,53], medium:[10,3.6,103], close_up:[5,4.4,94],
+  tracking:[9.5,3.6,59], over_shoulder:[6,5.8,54], low_angle:[8,1,63],
+  static:[12,4.7,48], two_shot:[11,4,58], group:[15,6,62], orbit:[12,4,57], crane_up:[18,5,58],
 };
-
-export function compileCamera(events, targetAt, shoutAt) {
+function cameraPos(event, at, elapsed, ids) {
+  const {shot,opts:o}=event, people=o.targets??ids;
+  const subject=at(o.target??people[0]), {pos,yaw,low}=subject;
+  const unit=(subject.height??5)/5;
+  const [d,h,lens]=lenses[shot], fov=o.fov??lens;
+  let dist=o.dist??d*unit, height=o.height??h*unit;
+  let angle=yaw+(o.face===false?Math.PI:0), side=o.side==='left'?-1:1;
+  let center=[...pos], aim=shot==='close_up'?4.1:shot==='medium'?3.35:2.65;
+  let look=[center[0],center[1]+aim*unit+low,center[2]];
+  if(shot==='tracking')angle+=side*Math.PI/2;
+  if(shot==='wide'||shot==='static')angle+=side*.22;
+  if(shot==='orbit')angle+=elapsed*.23*side;
+  if(shot==='crane_up'){height+=Math.min(18,elapsed*1.5);dist+=Math.min(12,elapsed);}
+  if(shot==='two_shot'||shot==='group'){
+    const actors=people.length?people.map(at):[subject];
+    const points=actors.flatMap(a=>[a.pos,[a.pos[0],a.pos[1]+(a.height??5),a.pos[2]]]);
+    const min=[0,1,2].map(i=>Math.min(...points.map(p=>p[i]))),max=min.map((_,i)=>Math.max(...points.map(p=>p[i])));
+    center=min.map((v,i)=>(v+max[i])/2);look=[...center];height-=2.5;
+    const radius=Math.hypot(...max.map((v,i)=>(v-min[i])/2))+1;
+    dist=Math.max(dist,radius/Math.sin(Math.atan(Math.tan(fov*Math.PI/360)*9/16)));
+  }
+  if(shot==='over_shoulder'){
+    const other=people.find(id=>id!==(o.target??people[0]));
+    if(other){const a=at(other);look=[a.pos[0],a.pos[1]+(a.height??5)*.84+a.low,a.pos[2]];
+      angle=Math.atan2(look[0]-pos[0],look[2]-pos[2]);}
+    else look=[pos[0]+Math.sin(angle)*6,pos[1]+4*unit,pos[2]+Math.cos(angle)*6];
+    center=[pos[0]+side*1.7*Math.cos(angle),pos[1],pos[2]-side*1.7*Math.sin(angle)];angle+=Math.PI;
+  }
+  const from=o.from??[center[0]+dist*Math.sin(angle),center[1]+height,center[2]+dist*Math.cos(angle)];
+  return {from:from.map((v,i)=>v+(o.offset?.[i]??0)),look:o.look??look,fov};
+}
+// Slab intersection along the sightline. Stop before the nearest blocking surface.
+export function avoidSolids(from,look,boxes,actors){
+  const delta=from.map((v,i)=>v-look[i]);let limit=1;
+  for(const {min,max} of boxes){
+    let lo=0,hi=1;
+    for(let i=0;i<3;i++){
+      if(Math.abs(delta[i])<1e-8){if(look[i]<min[i]||look[i]>max[i])hi=-1;continue;}
+      const a=(min[i]-.2-look[i])/delta[i],b=(max[i]+.2-look[i])/delta[i];
+      lo=Math.max(lo,Math.min(a,b));hi=Math.min(hi,Math.max(a,b));
+    }
+    if(lo>0&&lo<=hi)limit=Math.min(limit,lo);
+  }
+  const out=delta.map((v,i)=>look[i]+v*limit);
+  for(const {pos,height=5,low=0} of actors){
+    if(Math.hypot(out[0]-pos[0],out[2]-pos[2])<1.9&&out[1]>pos[1]+low-.4)
+      out[1]=Math.max(out[1],pos[1]+low+height+1);
+  }
+  return out;
+}
+export function compileCamera(events, targetAt, shoutAt, ids=[], boxes=[]) {
   const tracks = events.length && events[0].t===0 ? [...events] : [{t:0,shot:'wide',opts:{}},...events];
   for (let i=0;i<tracks.length;i++) {
     const event = tracks[i];
     // Static shots keep the initial view even when their target moves.
-    tracks[i] = {...event, hold:event.shot==='static'?cameraPos(event,id=>targetAt(id,event.t)):null};
+    tracks[i] = {...event, hold:event.shot==='static'?cameraPos(event,id=>targetAt(id,event.t),0,ids):null};
     if (i) tracks[i].previous = evaluate(tracks[i].t,i-1);
   }
   function evaluate(time, i) {
     const shot=tracks[i];
-    const view=shot.hold ?? cameraPos(shot,id=>targetAt(id,time));
+    const view=shot.hold ?? cameraPos(shot,id=>targetAt(id,time),time-shot.t,ids);
     const ease=shot.opts.cut?0:shot.opts.ease??.72;
     if (!shot.previous||ease===0||time-shot.t>=ease) return view;
     const k=smooth((time-shot.t)/ease);
-    return {from:view.from.map((v,j)=>mix(shot.previous.from[j],v,k)),look:view.look.map((v,j)=>mix(shot.previous.look[j],v,k))};
+    return {fov:mix(shot.previous.fov,view.fov,k),from:view.from.map((v,j)=>mix(shot.previous.from[j],v,k)),look:view.look.map((v,j)=>mix(shot.previous.look[j],v,k))};
   }
   return time=>{
     const i=Math.max(0,tracks.findLastIndex(shot=>shot.t<=time)), active=tracks[i];
-    const {from,look}=evaluate(time,i);
+    const {from,look,fov}=evaluate(time,i);
     const pulse=(active.opts.shake??0)*.13 + shoutAt(time)*.14;
-    return {from:[from[0]+Math.sin(time*41)*pulse,from[1]+Math.cos(time*53)*pulse,from[2]],look:[...look],shot:active.shot};
+    return {fov,from:avoidSolids([from[0]+Math.sin(time*41)*pulse,from[1]+Math.cos(time*53)*pulse,from[2]],look,boxes,ids.map(id=>targetAt(id,time))),look:[...look],shot:active.shot};
   };
 }
