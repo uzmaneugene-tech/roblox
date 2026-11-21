@@ -1,0 +1,21 @@
+define.location("rich_district", (w, o) => {
+  w.ground({texture:"grass",color:"#80b488"});
+  w.road([[-45,0,0],[45,0,0]],7);
+  w.path([[-42,0,5],[42,0,5]],1.8);
+  w.use("mansion",{"pos": [-22, 0, -14], "rot": [0, 0, 0]});
+  w.use("lamp",{"pos": [-18, 0, -4.8], "scale": 1});
+  w.use("mansion",{"pos": [-22, 0, 14], "rot": [0, 3.14, 0]});
+  w.use("lamp",{"pos": [-18, 0, 4.8], "scale": 1});
+  w.use("tree_oak",{"pos": [-26, 0, -5.5]});
+  w.use("mansion",{"pos": [0, 0, -14], "rot": [0, 0, 0]});
+  w.use("lamp",{"pos": [4, 0, -4.8], "scale": 1});
+  w.use("mansion",{"pos": [0, 0, 14], "rot": [0, 3.14, 0]});
+  w.use("lamp",{"pos": [4, 0, 4.8], "scale": 1});
+  w.use("tree_oak",{"pos": [-4, 0, -5.5]});
+  w.use("mansion",{"pos": [22, 0, -14], "rot": [0, 0, 0]});
+  w.use("lamp",{"pos": [26, 0, -4.8], "scale": 1});
+  w.use("mansion",{"pos": [22, 0, 14], "rot": [0, 3.14, 0]});
+  w.use("lamp",{"pos": [26, 0, 4.8], "scale": 1});
+  w.use("tree_oak",{"pos": [18, 0, -5.5]});
+  w.use("fountain",{"pos": [9, 0, 9]});
+});

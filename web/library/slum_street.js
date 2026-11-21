@@ -1,0 +1,20 @@
+define.location("slum_street", (w, o) => {
+  w.ground({texture:"grass",color:"#a4967b"});
+  w.road([[-45,0,0],[45,0,0]],7);
+  w.path([[-42,0,5],[42,0,5]],1.8);
+  w.use("slum_house",{"pos": [-12, 0, -10], "rot": [0, 0, 0]});
+  w.use("lamp",{"pos": [-8, 0, -4.8], "scale": 0.7});
+  w.use("slum_house",{"pos": [-12, 0, 10], "rot": [0, 3.14, 0]});
+  w.use("lamp",{"pos": [-8, 0, 4.8], "scale": 0.7});
+  w.use("trash_can",{"pos": [-16, 0, -5.5]});
+  w.use("slum_house",{"pos": [0, 0, -10], "rot": [0, 0, 0]});
+  w.use("lamp",{"pos": [4, 0, -4.8], "scale": 0.7});
+  w.use("slum_house",{"pos": [0, 0, 10], "rot": [0, 3.14, 0]});
+  w.use("lamp",{"pos": [4, 0, 4.8], "scale": 0.7});
+  w.use("trash_can",{"pos": [-4, 0, -5.5]});
+  w.use("slum_house",{"pos": [12, 0, -10], "rot": [0, 0, 0]});
+  w.use("lamp",{"pos": [16, 0, -4.8], "scale": 0.7});
+  w.use("slum_house",{"pos": [12, 0, 10], "rot": [0, 3.14, 0]});
+  w.use("lamp",{"pos": [16, 0, 4.8], "scale": 0.7});
+  w.use("trash_can",{"pos": [8, 0, -5.5]});
+});

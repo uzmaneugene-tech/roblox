@@ -1,0 +1,20 @@
+define.location("middle_street", (w, o) => {
+  w.ground({texture:"grass",color:"#80b488"});
+  w.road([[-45,0,0],[45,0,0]],7);
+  w.path([[-42,0,5],[42,0,5]],1.8);
+  w.use("house_big",{"pos": [-12, 0, -10], "rot": [0, 0, 0]});
+  w.use("lamp",{"pos": [-8, 0, -4.8], "scale": 1});
+  w.use("house_big",{"pos": [-12, 0, 10], "rot": [0, 3.14, 0]});
+  w.use("lamp",{"pos": [-8, 0, 4.8], "scale": 1});
+  w.use("tree_oak",{"pos": [-16, 0, -5.5]});
+  w.use("house_big",{"pos": [0, 0, -10], "rot": [0, 0, 0]});
+  w.use("lamp",{"pos": [4, 0, -4.8], "scale": 1});
+  w.use("house_big",{"pos": [0, 0, 10], "rot": [0, 3.14, 0]});
+  w.use("lamp",{"pos": [4, 0, 4.8], "scale": 1});
+  w.use("tree_oak",{"pos": [-4, 0, -5.5]});
+  w.use("house_big",{"pos": [12, 0, -10], "rot": [0, 0, 0]});
+  w.use("lamp",{"pos": [16, 0, -4.8], "scale": 1});
+  w.use("house_big",{"pos": [12, 0, 10], "rot": [0, 3.14, 0]});
+  w.use("lamp",{"pos": [16, 0, 4.8], "scale": 1});
+  w.use("tree_oak",{"pos": [8, 0, -5.5]});
+});

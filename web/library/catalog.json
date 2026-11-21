@@ -1,0 +1,292 @@
+[
+  {
+    "type": "building",
+    "name": "house_small",
+    "options": "floors, width, depth, color"
+  },
+  {
+    "type": "building",
+    "name": "house_big",
+    "options": "floors, width, depth, color"
+  },
+  {
+    "type": "building",
+    "name": "slum_house",
+    "options": "floors, width, depth, color"
+  },
+  {
+    "type": "building",
+    "name": "apartment",
+    "options": "floors, width, depth, color"
+  },
+  {
+    "type": "building",
+    "name": "tower",
+    "options": "floors, width, depth, color"
+  },
+  {
+    "type": "building",
+    "name": "mansion",
+    "options": "floors, width, depth, color"
+  },
+  {
+    "type": "building",
+    "name": "shop",
+    "options": "floors, width, depth, color"
+  },
+  {
+    "type": "building",
+    "name": "school",
+    "options": "floors, width, depth, color"
+  },
+  {
+    "type": "building",
+    "name": "hospital",
+    "options": "floors, width, depth, color"
+  },
+  {
+    "type": "building",
+    "name": "garage",
+    "options": "floors, width, depth, color"
+  },
+  {
+    "type": "prop",
+    "name": "tree_oak",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "tree_pine",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "bush",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "flowers",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "rock",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "fence_wood",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "fence_metal",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "bench",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "lamp",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "traffic_light",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "bus_stop",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "vending_machine",
+    "options": "color, text"
+  },
+  {
+    "type": "prop",
+    "name": "trash_can",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "mailbox",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "picnic_table",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "sofa",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "bed",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "tv",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "shelf",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "desk",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "chair",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "elevator",
+    "options": "floor"
+  },
+  {
+    "type": "prop",
+    "name": "stairs",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "escalator",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "rooftop_pool",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "helipad",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "fountain",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "statue",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "gold_coin",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "money_stack",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "briefcase",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "golden_letter",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "car",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "bus",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "limo",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "bike",
+    "options": "color"
+  },
+  {
+    "type": "prop",
+    "name": "helicopter",
+    "options": "color"
+  },
+  {
+    "type": "location",
+    "name": "slum_street",
+    "options": ""
+  },
+  {
+    "type": "location",
+    "name": "middle_street",
+    "options": ""
+  },
+  {
+    "type": "location",
+    "name": "rich_district",
+    "options": ""
+  },
+  {
+    "type": "location",
+    "name": "city_tower",
+    "options": "floors"
+  },
+  {
+    "type": "location",
+    "name": "rooftop",
+    "options": ""
+  },
+  {
+    "type": "location",
+    "name": "office_lobby",
+    "options": ""
+  },
+  {
+    "type": "location",
+    "name": "ceo_office",
+    "options": ""
+  },
+  {
+    "type": "location",
+    "name": "elevator_inside",
+    "options": ""
+  },
+  {
+    "type": "location",
+    "name": "school_yard",
+    "options": ""
+  },
+  {
+    "type": "character",
+    "name": "jin",
+    "options": ""
+  },
+  {
+    "type": "animation",
+    "name": "salute",
+    "options": "duration"
+  }
+]
