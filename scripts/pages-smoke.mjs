@@ -57,6 +57,14 @@ try {
   });
   await check('Custom library item survives reload and round-trips through JSON and JavaScript', async () => {
     await nav.getByRole('link',{name:'Library',exact:true}).tap();
+    await page.locator('#lib-source').fill('define.prop("bad_item", b=>{\n b.box({rough:3});\n});');
+    await page.locator('#lib-save').tap();
+    await page.locator('#lib-copy-error:not([hidden])').waitFor();
+    const diagnostic=await page.locator('#lib-error').textContent();
+    assert.match(diagnostic,/Line 2:.*bad_item/);
+    await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.copiedDiagnostic=text}}}));
+    await page.locator('#lib-copy-error').tap();
+    assert.equal(await page.evaluate(()=>window.copiedDiagnostic),diagnostic);
     const src='define.prop("ci_marker", b=>b.cone({pos:[0,1,0],scale:2,color:"#eb915c"}));';
     await page.locator('#lib-source').fill(src);
     await page.locator('#lib-save').tap();

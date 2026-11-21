@@ -45,7 +45,7 @@ export async function startLibrary(){
   el('spin').textContent=spin?'Pause rotation':'Rotate';
   action('spin',()=>{spin=!spin;stop();el('spin').textContent=spin?'Pause rotation':'Rotate';if(spin)draw(performance.now());});
   async function copy(text){try{await navigator.clipboard.writeText(text);state('Copied.')}catch{el('copy-text').hidden=false;el('copy-text').value=text;el('copy-text').select();state('Text selected. Use Copy.');}}
-  action('copy-error',()=>copy(el('error').textContent));
+  el('copy-error').onclick=()=>copy(el('error').textContent);
   action('copy',async()=>copy(await (await import('../docs-view.js')).libraryReference(await allItems())));
   action('new',()=>{el('source').value='define.prop("my_prop", (b, o) => {\n  b.box({pos:[0,1,0], scale:[2,2,2], color:o.color ?? "#479ba3"});\n});';el('source').focus();});
   async function install(records){

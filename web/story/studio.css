@@ -82,3 +82,4 @@
 #lib-canvas{display:block;width:100%;height:clamp(220px,36vh,420px);border-radius:8px}
 #lib-source{font:14px/1.5 var(--mono);width:100%}#lib-error{color:#ffc6a1;white-space:pre-wrap}
 @media(max-width:650px){.lib-grid{grid-template-columns:1fr}.lib-featured{grid-template-columns:1fr 1fr}}
+#library [hidden]{display:none!important}

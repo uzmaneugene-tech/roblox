@@ -26,7 +26,8 @@ export function startStudio() {
   const updateExport=connectVideoExport({getTimeline:()=>timeline,pauseStory:stop});
   const scene = $('scene');
   const scrub = $('time'), play = $('play');
-  code.value = readDraft() ?? history[0] ?? example;
+  // A paste can arrive while this tab’s module is still loading.
+  if (!code.value) code.value = readDraft() ?? history[0] ?? example;
   function saveDraft(){
     try{ if(code.value.length<=MAX_SOURCE)localStorage.setItem(DRAFT_KEY,code.value); }catch{}
   }
