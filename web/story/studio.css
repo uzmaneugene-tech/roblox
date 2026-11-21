@@ -61,8 +61,7 @@
   -webkit-text-stroke:.16em #101119;paint-order:stroke fill;
   word-break:break-word;text-shadow:0 2px 4px #101119;
 }
-#story-character-preview { margin-top:18px; }
-#story-character-preview > summary { cursor:pointer;font-weight:700;color:var(--lime); }
+.character-pane { max-width:500px; }
 
 .export-panel { margin-top:16px; }
 .export-panel h2 { margin-bottom:12px; }

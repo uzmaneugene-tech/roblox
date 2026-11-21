@@ -3,6 +3,8 @@ name: Deploy GitHub Pages
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -11,26 +13,46 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Test application and install Chromium
+        run: |
+          npm ci
+          npm test
+          npx playwright install --with-deps chromium
+      - name: Stage the Pages artifact
+        run: |
+          mkdir -p _site
+          bash scripts/prepare-pages.sh _site/roblox
+      - name: Smoke test Pages under /roblox/
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 --directory _site &
+          server=$!
+          trap 'kill "$server"' EXIT
+          curl --retry 5 --retry-connrefused --retry-delay 1 -fsS -o /dev/null http://127.0.0.1:8000/roblox/
+          node scripts/pages-smoke.mjs
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: _site/roblox
   deploy:
+    if: github.event_name != 'pull_request'
+    needs: verify
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Copy source documents and downloads
-        run: |
-          rm -rf web/docs
-          mkdir -p web/docs web/downloads
-          cp -R docs/. web/docs/
-          cp blender-addon/roblox_cinematic_exporter.zip roblox/*.lua web/downloads/
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: web
       - id: deployment
         uses: actions/deploy-pages@v4

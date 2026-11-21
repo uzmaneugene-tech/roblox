@@ -1,5 +1,5 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101211"><title>Framecut — Cinematic Studio</title><link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./story/studio.css"><script type="module" src="./app.js"></script></head><body>
-<header><a class="brand" href="#home"><i class="brandmark" aria-hidden="true">◩</i> FRAMECUT <small>/ STUDIO</small></a><nav aria-label="Main navigation"><a href="#story">Story Studio</a><a href="#locations">Location Preview</a><a href="#cheatsheet">Cheatsheet</a><a href="#home">Overview</a><a href="#builder">Shot Builder</a><a href="#converter">Converter</a><a href="#guide">Guide</a></nav><span class="online"><b></b> STUDIO ONLINE</span></header>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101211"><title>Framecut — Cinematic Studio</title><link rel="stylesheet" href="./style.css"><link rel="stylesheet" href="./story/studio.css"><link rel="icon" href="./favicon.svg" type="image/svg+xml"><script defer src="./navigation.js"></script><script type="module" src="./app.js?v=pages-tabs"></script></head><body>
+<header><a class="brand" href="#home"><i class="brandmark" aria-hidden="true">◩</i> FRAMECUT <small>/ STUDIO</small></a><nav aria-label="Main navigation"><a href="#story">Story Studio</a><a href="#locations">Location Preview</a><a href="#characters">Character Preview</a><a href="#cheatsheet">Cheatsheet</a><a href="#home">Overview</a><a href="#builder">Shot Builder</a><a href="#converter">Converter</a><a href="#captions">Caption Writer</a><a href="#guide">Guide</a></nav><span class="online"><b></b> STUDIO ONLINE</span></header>
 <main><section id="home"><div class="hero"><div class="hero-copy"><div class="eyebrow"><span></span> BLENDER × ROBLOX</div><h1>Cinematic<br><em>Studio.</em></h1><p>Build your story shot by shot. Create cinematic camera sequences for Roblox, in Blender or right in your browser.</p><div class="actions"><a class="primary" download href="./downloads/roblox_cinematic_exporter.zip">↓ &nbsp;Download add-on</a><a class="secondary" href="#guide">Read the guide ↗</a></div></div>
 <figure class="monitor"><div class="screen"><div class="viewtop"><span class="rec">● REC</span><span>CAM A &nbsp; / &nbsp; 24 FPS</span></div><div class="reticle">+</div><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><div class="viewbottom">SC. 01 &nbsp; / &nbsp; EXT. CANYON</div></div><figcaption><span><b></b> CAMERA MONITOR</span><span>00:00:04:12</span></figcaption></figure></div>
 <div class="section-title"><div><div class="eyebrow"><span></span> WORKSPACE</div><h2>Studio tools</h2></div><small>01 — 03</small></div>
@@ -58,17 +58,20 @@
         <canvas id="story-film" width="360" height="640" aria-label="Story playback preview"></canvas>
         <span id="story-caption" class="story-word"></span>
       </div>
-      <details id="story-character-preview">
-      <summary>Character Preview</summary>
-      <p>Inspect the avatar design before any environments are built.</p>
+      <div class="actions"><a href="#characters">Open Character Preview ↗</a></div>
+    </div>
+  </div>
+</section>
+<section id="characters" hidden>
+  <h1>Character Preview</h1>
+  <div class="character-pane pane">
+      <p>Inspect Jin or the characters from your latest Story Studio run.</p>
       <canvas id="story-avatar" width="360" height="640" aria-label="Portrait 3D character preview"></canvas>
-      <div id="story-character-controls" class="story-looks" hidden>
+      <div id="story-character-controls" class="story-looks">
         <label>Character <select id="story-character"></select></label>
         <label>View <select id="story-angle"><option value="three-quarter">Three-quarter</option><option value="front">Front</option><option value="side">Side</option><option value="back">Back</option></select></label>
         <label>Expression <select id="story-expression"></select></label>
       </div>
-      </details>
-    </div>
   </div>
 </section>
 <section id="cheatsheet" hidden>
