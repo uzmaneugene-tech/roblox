@@ -32,7 +32,7 @@ scene("Practice", { location: "basketball_court", time: "dusk", duration: 5 }, s
 | `s.say(t, char, text, options?)` | `s.say(3, jin, "Ready to play", {speed:2})` | One word at a time; no speaker name. |
 | `s.narrate(t, text, options?)` | `s.narrate(4, "Later that night", {speed:3})` | Same treatment as dialogue. `speed` is words per second (default 3). A new line replaces the current line. |
 | `s.light(options)` | `s.light({color:"#ffd9ad", intensity:2, ambient:1.2})` | Optional lighting override. |
-| `s.sfx(t, name)` | `s.sfx(1,"buzzer")` | Records a sound cue; preview has no sound playback. |
+| `s.sfx(t, name)` | `s.sfx(1,"buzzer")` | Plays a procedural sound in preview and export. |
 
 ## Actions
 
@@ -176,11 +176,166 @@ scene("Court", {location:"basketball_court",time:"night",duration:12}, s => {
 ## Export a video
 
 1. Run the story. In **Export video**, choose **1080 × 1920** or **720 × 1280**.
-2. Optionally choose a voiceover file (MP3, WAV, or M4A) and enter its start in seconds. Enable placeholder sound effects to mix `s.sfx` sound cues into the export.
+2. Optionally choose a voiceover file (MP3, WAV, or M4A) and enter its start in seconds. Keep Include effects, ambience and music selected to mix generated audio into the export.
 3. Press **Export video**. Keep the tab open; progress shows an estimate and can be cancelled.
 4. Press **Download video** after encoding completes.
 
-Video and audio stay on the device. WebCodecs exports each frame at its exact timeline time. If H.264 or AAC support is missing, the site tries a WebCodecs WebM export. The last fallback uses MediaRecorder in real time, so frame timing can vary. Voiceover decoding depends on the browser, and audio is trimmed to the end of the video. The voiceover limit is 30 MB. Large exports can hit browser memory limits; try 720p or split the story. The preview builds and releases sets one scene at a time.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:9dcfb9c02d6f1c9329551555e1daf201cf1fd6adf86530e76fe7fbb7e00cee51 -->
+
+Video and audio stay on the device. WebCodecs exports each frame at its exact timeline time. MP4 uses AAC when available, then Opus if the browser can play that combination. Otherwise the site tries a WebCodecs WebM export. The last fallback uses MediaRecorder in real time, so frame timing can vary. Voiceover decoding depends on the browser, and audio is trimmed to the end of the video. The voiceover limit is 30 MB. Large exports can hit browser memory limits; try 720p or split the story. The preview builds and releases sets one scene at a time.
+
+## Phase 2: Sound, effects and weather
+
+**Try it:** In Story Studio, click **Load sound and effects sample**, **Run**, then **Play**. The sample covers every effect, sound, loop, transition, weather type and new action. Open **Sound mixer** to mute playback/export or adjust the four audio levels. Press Run or Play to enable audio on mobile. Imported voiceover keeps its absolute export offset; procedural cues and loops follow scene time.
+
+| Call or option | Example | Details |
+|---|---|---|
+| `s.sfx(t,name)` | `s.sfx(1,"ding")` | Plays a procedural cue; legacy custom cue names still produce a short tone. |
+| `s.ambience(name,{volume})` | `s.ambience("crickets",{volume:.4})` | One background loop per scene; volume 0–1. |
+| `s.music(name,{volume,fadeIn})` | `s.music("calm",{volume:.6,fadeIn:1})` | One generated music loop per scene; fadeIn in seconds; scene boundaries fade the loops. |
+| `s.fx(t,name,opts)` | `s.fx(2,"hearts",{target:jin,duration:2,intensity:1.5})` | Use `target` or `position:[x,y,z]`; duration in seconds, intensity 0–3. |
+| `s.bubble(t,char,text,opts)` | `s.bubble(1,jin,"Hi!",{kind:"speech",duration:2})` | Kinds: speech, thought, exclaim. Attaches above the head. |
+| `s.title(t,text,opts)` | `s.title(0,"Chapter One",{sub:"After dark",style:"chapter",duration:2})` | Styles: big, lowerthird, chapter. |
+| `s.transition(t,name,{duration})` | `s.transition(3,"whip_pan",{duration:.7})` | Plays an effect that peaks halfway through the interval. |
+| Scene edges | `{location:"backyard_party",time:"day",duration:7,transitionIn:"fade_white",transitionOut:{name:"iris",duration:1}}` | A transition name or `{name,duration}`; defaults to .45 s. |
+| `s.slowmo(t,duration,factor)` | `s.slowmo(2,1,.5)` | Plays one source second at half speed in two output seconds. Audio slows with the scene, including pitch. |
+| `s.freeze(t,duration)` | `s.freeze(4,.6)` | Inserts a still; music and ambience continue during the still. Don't overlap timing edits. The playback/export length changes; authored cue times stay in story seconds. |
+| Scene weather | `{location:"basketball_court",time:"day",duration:7,weather:"storm"}` | Options: rain, snow, fog, storm, clear. Storm has localized flashes and thunder. |
+| `s.timeOfDay(t,time,{duration})` | `s.timeOfDay(2,"night",{duration:3})` | Day, dusk, night. Blends sky, scene lighting, fog and glows. |
+
+### Sound effects
+
+| Name | Example |
+|---|---|
+| whoosh | `s.sfx(1,"whoosh")` |
+| door_open | `s.sfx(1,"door_open")` |
+| door_close | `s.sfx(1,"door_close")` |
+| buzzer | `s.sfx(1,"buzzer")` |
+| cheer | `s.sfx(1,"cheer")` |
+| clap | `s.sfx(1,"clap")` |
+| pop | `s.sfx(1,"pop")` |
+| ding | `s.sfx(1,"ding")` |
+| coin | `s.sfx(1,"coin")` |
+| thud | `s.sfx(1,"thud")` |
+| step | `s.sfx(1,"step")` |
+| camera_click | `s.sfx(1,"camera_click")` |
+| gasp | `s.sfx(1,"gasp")` |
+| sad_trombone | `s.sfx(1,"sad_trombone")` |
+| swoosh_fast | `s.sfx(1,"swoosh_fast")` |
+| hoop | `s.sfx(1,"hoop")` |
+| elevator_ding | `s.sfx(1,"elevator_ding")` |
+| phone_ring | `s.sfx(1,"phone_ring")` |
+| heartbeat | `s.sfx(1,"heartbeat")` |
+| boom | `s.sfx(1,"boom")` |
+
+### Ambient loops
+
+| Name | Example |
+|---|---|
+| city_night | `s.ambience("city_night",{volume:.5})` |
+| crickets | `s.ambience("crickets",{volume:.5})` |
+| party_crowd | `s.ambience("party_crowd",{volume:.5})` |
+| wind | `s.ambience("wind",{volume:.5})` |
+| rain | `s.ambience("rain",{volume:.5})` |
+| office_hum | `s.ambience("office_hum",{volume:.5})` |
+| none | `s.ambience("none",{volume:.5})` |
+
+### Generated music
+
+| Name | Example |
+|---|---|
+| calm | `s.music("calm",{volume:.5,fadeIn:.4})` |
+| tense | `s.music("tense",{volume:.5,fadeIn:.4})` |
+| happy | `s.music("happy",{volume:.5,fadeIn:.4})` |
+| sad | `s.music("sad",{volume:.5,fadeIn:.4})` |
+| epic | `s.music("epic",{volume:.5,fadeIn:.4})` |
+| none | `s.music("none",{volume:.5,fadeIn:.4})` |
+
+### Particle effects
+
+| Name | Example |
+|---|---|
+| confetti | `s.fx(1,"confetti",{position:[0,3,0],duration:2,intensity:1})` |
+| rain | `s.fx(1,"rain",{position:[0,3,0],duration:2,intensity:1})` |
+| snow | `s.fx(1,"snow",{position:[0,3,0],duration:2,intensity:1})` |
+| smoke | `s.fx(1,"smoke",{position:[0,3,0],duration:2,intensity:1})` |
+| sparks | `s.fx(1,"sparks",{position:[0,3,0],duration:2,intensity:1})` |
+| hearts | `s.fx(1,"hearts",{position:[0,3,0],duration:2,intensity:1})` |
+| money_rain | `s.fx(1,"money_rain",{position:[0,3,0],duration:2,intensity:1})` |
+| stars | `s.fx(1,"stars",{position:[0,3,0],duration:2,intensity:1})` |
+| fireworks | `s.fx(1,"fireworks",{position:[0,3,0],duration:2,intensity:1})` |
+| dust | `s.fx(1,"dust",{position:[0,3,0],duration:2,intensity:1})` |
+
+### Transitions
+
+| Name | Example |
+|---|---|
+| fade_black | `s.transition(2,"fade_black",{duration:.5})` |
+| fade_white | `s.transition(2,"fade_white",{duration:.5})` |
+| whip_pan | `s.transition(2,"whip_pan",{duration:.5})` |
+| flash | `s.transition(2,"flash",{duration:.5})` |
+| iris | `s.transition(2,"iris",{duration:.5})` |
+| glitch | `s.transition(2,"glitch",{duration:.5})` |
+
+### Weather
+
+| Name | Example |
+|---|---|
+| rain | `scene("Weather",{location:"empty",time:"day",duration:5,weather:"rain"},s=>{})` |
+| snow | `scene("Weather",{location:"empty",time:"day",duration:5,weather:"snow"},s=>{})` |
+| fog | `scene("Weather",{location:"empty",time:"day",duration:5,weather:"fog"},s=>{})` |
+| storm | `scene("Weather",{location:"empty",time:"day",duration:5,weather:"storm"},s=>{})` |
+| clear | `scene("Weather",{location:"empty",time:"day",duration:5,weather:"clear"},s=>{})` |
+
+### Action poses
+
+| Name | Example |
+|---|---|
+| hold | `s.do(1,jin,"hold","phone")` |
+| hug | `s.do(1,jin,"hug",kai)` |
+| dance | `s.do(1,jin,"dance","shuffle")` |
+| cry | `s.do(1,jin,"cry")` |
+| laugh | `s.do(1,jin,"laugh")` |
+| push | `s.do(1,jin,"push",kai)` |
+| pick_up | `s.do(1,jin,"pick_up","letter")` |
+| give | `s.do(1,jin,"give",kai)` |
+| phone_call | `s.do(1,jin,"phone_call")` |
+| point | `s.do(1,jin,"point")` |
+| bow | `s.do(1,jin,"bow")` |
+| clap | `s.do(1,jin,"clap")` |
+| salute | `s.do(1,jin,"salute")` |
+| nod | `s.do(1,jin,"nod")` |
+| shake_head | `s.do(1,jin,"shake_head")` |
+| shrug | `s.do(1,jin,"shrug")` |
+| stretch | `s.do(1,jin,"stretch")` |
+| sleep | `s.do(1,jin,"sleep")` |
+| kneel | `s.do(1,jin,"kneel")` |
+| crawl | `s.do(1,jin,"crawl")` |
+| backflip | `s.do(1,jin,"backflip")` |
+| kick | `s.do(1,jin,"kick")` |
+| punch_air | `s.do(1,jin,"punch_air")` |
+
+### Held items
+
+| Name | Example |
+|---|---|
+| phone | `s.do(1,jin,"hold","phone")` |
+| briefcase | `s.do(1,jin,"hold","briefcase")` |
+| cup | `s.do(1,jin,"hold","cup")` |
+| letter | `s.do(1,jin,"hold","letter")` |
+| ball | `s.do(1,jin,"hold","ball")` |
+| money | `s.do(1,jin,"hold","money")` |
+| flag | `s.do(1,jin,"hold","flag")` |
+| microphone | `s.do(1,jin,"hold","microphone")` |
+| umbrella | `s.do(1,jin,"hold","umbrella")` |
+
+For dance, use `"shuffle"`, `"robot"` or `"spin"`. Hold an item before `give`, and place the recipient within reach. Use character handles for hug, push and give. The held items are also standalone library props, for example `s.spawn("phone",[0,0,0],{color:"#28364d"})`.
+
+
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 
 <!-- /coderabbit-ai-generated:v1 -->

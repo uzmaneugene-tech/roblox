@@ -14,8 +14,8 @@ Write and animate Story Code in the browser, or create Roblox camera sequences w
 
 1. Open **Story Studio → Load sample → Run**, or paste your own synchronous Story Code. The browser saves the current draft and up to 10 distinct versions.
 2. Use **Play** or scrub the timeline to preview the story. Open **Cheatsheet → Copy cheatsheet** for the API and an example that uses every option.
-3. Under **Export video**, choose **1080 × 1920** or **720 × 1280**. Optionally add an MP3, WAV, or M4A voiceover, set its start offset in seconds, and enable placeholder sound effects.
-4. Press **Export video**, then **Download video**. The browser exports portrait video at 30 fps. WebCodecs creates every frame at its exact timeline time. H.264 MP4 is preferred, with AAC for audio. If unavailable, the site tries exact-timing WebM, then real-time WebM recording as a last fallback.
+3. Under **Export video**, choose **1080 × 1920** or **720 × 1280**. Optionally add an MP3, WAV, or M4A voiceover, set its start offset in seconds, and leave generated audio enabled.
+4. Press **Export video**, then **Download video**. The browser exports portrait video at 30 fps. WebCodecs creates every frame at its exact timeline time. H.264 MP4 is preferred, with AAC for audio or Opus on browsers that support it in MP4. If unavailable, the site tries exact-timing WebM, then real-time WebM recording as a last fallback.
 
 The browser must support the codec and have enough memory for the selected resolution. Keep the tab open until export finishes. For large stories or lower memory phones, use 720p or split the story. Audio uploads are limited to 30 MB and trimmed to the video duration. Read the [Story Code reference](docs/story-code.md) for examples and export details.
 

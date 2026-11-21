@@ -110,9 +110,32 @@ try {
     await page.locator('#cheatsheet-copy').tap();
     assert.ok(await page.evaluate(async()=>{
       const text=window.copiedDiagnostic,rows=await(await fetch('./library/catalog.json')).json();
-      return text===await(await fetch(document.querySelector('#cheatsheet-file').href)).text()
+      return text.includes('s.timeOfDay(2,')&&text.includes('s.do(1,jin,"punch_air")')&&text===await(await fetch(document.querySelector('#cheatsheet-file').href)).text()
         &&rows.every(i=>text.includes('| '+i.name+' | '+i.type+' | '+(i.options||'—')+' |'));
     }));
+  });
+  await check('Sound and effects sample runs, plays from a tap and can be muted',async()=>{
+    await nav.getByRole('link',{name:'Story Studio',exact:true}).tap();
+    await page.locator('#story-phase-two').tap();
+    await page.evaluate(()=>{
+      const resume=AudioContext.prototype.resume, start=AudioBufferSourceNode.prototype.start, stop=AudioBufferSourceNode.prototype.stop;
+      window.audioSmoke={resume:0,start:0,stop:0};
+      AudioContext.prototype.resume=function(...args){window.audioSmoke.resume++;return resume.apply(this,args);};
+      AudioBufferSourceNode.prototype.start=function(...args){window.audioSmoke.start++;return start.apply(this,args);};
+      AudioBufferSourceNode.prototype.stop=function(...args){window.audioSmoke.stop++;return stop.apply(this,args);};
+    });
+    await page.locator('#story-run').tap();
+    await page.locator('#story-run:enabled').waitFor({timeout:15000});
+    assert.ok(await page.locator('#story-errors').isHidden(),await page.locator('#story-error').textContent());
+    assert.match(await page.locator('#story-status').textContent(),/7 scenes/);
+    await page.locator('#story-play').tap();
+    await page.waitForFunction(()=>window.audioSmoke.resume>0&&window.audioSmoke.start>0);
+    await page.locator('#story-audio summary').tap();
+    await page.locator('#story-sound').uncheck();
+    await page.waitForFunction(()=>window.audioSmoke.stop>0);
+    if(await page.locator('#story-play').textContent()==='Pause')await page.locator('#story-play').tap();
+    await page.locator('#story-scene').selectOption('Thunder Break');
+    assert.equal(await page.locator('#story-film').getAttribute('data-shot'),'two_shot');
   });
   assert.equal(errors.length, 0, errors.join('\n'));
   console.log(`${checks.length} checks passed at ${base}; no console errors, failed requests or script MIME errors.`);
