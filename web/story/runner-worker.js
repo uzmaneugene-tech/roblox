@@ -5,5 +5,5 @@ self.onmessage = async ({ data }) => {
     self.postMessage(await runStory(data.source,{library:data.library}));
   } catch {
     self.postMessage({ error: { message: 'The Story Code engine could not start. Reload and try again.' } });
-  }
+  }finally{self.close();}
 };

@@ -92,9 +92,9 @@ export async function runStory(source, { budget = 1500, library=[] } = {}) {
     const line=Number(hit?.[2])||1,file=hit?.[1]??'story.js';
     const item=library.find(i=>'library/'+i.name+'.js'===file);
     const snippet=(item?.source??source).split('\n')[line-1]?.trim().slice(0,200)??'';
-    const key=[kind,file,line,msg].join(':');if(seen.has(key)||issues.some(i=>i.file===file&&i.line===line&&i.message.startsWith('Missing dependency')&&msg.includes('Missing dependency')))return;
+    const explained=explain(msg),key=[kind,file,line,msg].join(':');if(issues.some(i=>i.line===line&&i.file===file&&i.message===explained)||seen.has(key)||issues.some(i=>i.file===file&&i.line===line&&i.message.startsWith('Missing dependency')&&msg.includes('Missing dependency')))return;
     if(seen.size>=250)throw Error('Diagnostic limit exceeded (250).');
-    seen.add(key);(kind==='notice'?warnings:issues).push({line,message:explain(msg),snippet,file});
+    seen.add(key);(kind==='notice'?warnings:issues).push({line,message:explained,snippet,file});
   }
   function failed(){return {issues,warnings,error:{line:issues[0].line,message:issues.map(i=>i.file+' · Line '+i.line+': '+i.message+'\n  '+i.snippet).join('\n\n')}};}
 

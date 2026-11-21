@@ -72,7 +72,6 @@ try {
     await page.locator('#lib-save').tap();
     await page.locator('#lib-canvas[data-ready="ci_marker"]').waitFor({timeout:15000});
     await page.waitForFunction(()=>document.querySelector('#lib-status').textContent.startsWith('Saved '));
-    await page.waitForLoadState('networkidle');
     await page.reload();
     await page.locator('#lib-canvas[data-ready="tower"]').waitFor();
     await page.locator('#lib-item option[value="ci_marker"]').waitFor({state:'attached'});

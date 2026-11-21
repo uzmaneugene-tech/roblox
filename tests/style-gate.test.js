@@ -47,3 +47,7 @@ test('story spawn accepts degrees and preserves existing radian rot',async()=>{
  const r=await run('s.spawn("marker",[0,0,0],{rotate:90});s.spawn("marker",[1,0,0],{rot:[0,.7,0]});',[{name:'marker',source:'define.prop("marker",b=>b.box({}));'}]);
  assert.ok(!r.error,JSON.stringify(r.error));assert.deepEqual(r.timeline.scenes[0].nodes.filter(n=>n.kind==='group').map(n=>n.options.rot[1]),[Math.PI/2,.7]);
 });
+test('literal action and shot typos are reported even when a branch is not taken',async()=>{
+ const result=await run('if(false){s.do(0,a,"bowing");s.cam(1,"wid");}');
+ assert.match(result.error.message,/Did you mean "bow"/);assert.match(result.error.message,/Did you mean "wide"/);
+});

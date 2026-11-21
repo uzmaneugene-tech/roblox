@@ -9,13 +9,13 @@ export async function execute(source,library) {
       resolve({ error: { message: 'The browser could not start the Story Code worker.' } });
       return;
     }
-    const settle = result => {
+    const settle = (result,terminate=true) => {
       clearTimeout(timer);
-      worker.terminate();
+      if(terminate)worker.terminate();
       resolve(result);
     };
     const timer = setTimeout(() => settle({ error: { message: 'Story Code worker timed out. Try again or simplify the script.' } }), 8000);
-    worker.onmessage = ({ data }) => settle(data);
+    worker.onmessage = ({ data }) => settle(data,false);
     worker.onerror = event => {
       event.preventDefault();
       settle({ error: { message: 'The Story Code worker failed to load. Reload and try again.' } });
