@@ -42,9 +42,12 @@ export async function cheatsheet() {
 export async function libraryReference(items){
   const examples=items.map(i=>{
     const n=JSON.stringify(i.name);
+    const optionExample={floors:4,width:10,depth:8,color:'#75afa6',text:'OPEN',floor:3};
+    const opts=Object.fromEntries((i.options??'').split(', ').filter(k=>k in optionExample).map(k=>[k,optionExample[k]]));
+    const extra=Object.keys(opts).length?','+JSON.stringify(opts):'';
     const use=i.type==='location'?'scene("Set",{location:'+n+',time:"dusk",duration:4},s=>{})'
       :i.type==='character'?'character("Hero",{preset:'+n+'})'
-      :i.type==='animation'?'s.do(0,jin,'+n+',{duration:2})':'s.spawn('+n+',[0,0,0])';
+      :i.type==='animation'?'s.do(0,jin,'+n+',{duration:2})':'s.spawn('+n+',[0,0,0]'+extra+')';
     return '| '+i.name+' | '+i.type+' | '+(i.options||'—')+' | \`'+use+'\` |';
   });
   return await readDoc('library')+'\n\n### Available items on this device\n\n| Item | Type | Item options | Example |\n|---|---|---|---|\n'+examples.join('\n');

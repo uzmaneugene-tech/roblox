@@ -84,7 +84,7 @@ export function createStoryView(canvas, caption, fixedSize) {
     const director=compileCamera(data.cameras,targetAt,time=>shouts.reduce((strength,shot)=>{
       const age=time-shot.t;
       return Math.max(strength,age>=0&&age<1.1?smooth(age/.15)*(1-smooth((age-.16)/.94)):0);
-    },0),[...placed.keys()],solids);
+    },0),[...placed.keys()],solids,library.actors);
     scene.add(root);
     const face=new T.Quaternion(), inverse=new T.Quaternion(), halos=[];
     root.traverse(item=>{if(item.userData.halo)halos.push(item);});

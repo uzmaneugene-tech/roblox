@@ -71,7 +71,64 @@ scene("Roof",{location:"empty",time:"night",duration:5},s=>{
 
 Body: slim (default), normal, tall, kid, big. Hair: messy (Jin), short, long, bald, cap, mohawk; previous hair colors still work. Accessories: glasses, sunglasses, beanie, party_hat, crown, tie, backpack, headphones, suit. Example: `character("Alex",{body:"kid",hair:"mohawk",accessories:["backpack","headphones"]})`.
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:1ff41d081eb036e1b3717236f96911c04b30b69f461ef755a6089af6c65b3d4f -->
+
+## Combined builder recipe
+
+Save each definition below as its own item. The final scene exercises the whole kit. Sizes and positions are in studs; rotations are radians.
+
+```js
+define.prop("kiosk", (b,o)=>{
+  const g=b.group({pos:[0,.1,0],rot:[0,.1,0],scale:1});
+  g.box({pos:[0,1,0],scale:[2,2,1],color:o.color??"#50918d",rough:.6,outline:true});
+  g.cylinder({pos:[0,2.4,0],scale:[.18,.8,.18]});
+  g.cone({pos:[0,3,0],scale:[1,.8,1],color:"#e7b166"});
+  g.sphere({pos:[0,3.45,0],scale:.32,color:"#ffde99",emissive:"#ffb677"});
+  g.wedge({pos:[0,.2,.9],scale:[1,.4,1]});
+  g.torus({pos:[.6,1.4,.56],scale:.36});
+  g.plane({pos:[-.25,1.4,.56],scale:[.65,.65,1]});
+  g.text("TICKETS",{pos:[0,2,.6],scale:[1.8,.4,1]});
+  g.light("#ffbf77",4,8,{pos:[0,3.45,0]});
+});
+define.building("arcade", (b,o)=>{
+  b.use("shop",{width:o.width??12,depth:o.depth??6,floors:o.floors??1,color:o.color??"#74a5ab"});
+  b.repeat(2,i=>b.use("kiosk",{pos:[i*3-1.5,0,5]}));
+});
+define.location("market_square", (w,o)=>{
+  w.sky({time:o.time});w.ground({texture:"concrete"});w.fog({near:28,far:130});
+  w.road([[-22,0,8],[22,0,8]],5);w.path([[0,0,4],[0,0,8]]);
+  w.use("arcade",{floors:2,width:12,depth:6});
+  w.scatter("flowers",{count:8,area:[16,12],seed:4,avoid:[[0,0,4]]});
+  w.row("bench",{from:[-8,0,4],to:[-4,0,4],count:2});
+  w.grid("bush",{rows:2,cols:3,gap:[2,3],pos:[6,0,0]});
+});
+define.character("clerk",{body:"normal",skin:"medium",hair:"short",outfit:{shirt:"#57948f"},accessories:["tie"]});
+define.animation("welcome",(rig,t,o)=>{rig.armR.rotation.z=(o.lift??2)*Math.sin(t*3);});
+```
+
+Run this in Story Studio:
+
+```js
+const host=character("Host",{preset:"clerk"}), guest=character("Guest",{body:"kid",hair:"cap"});
+scene("Tickets",{location:"market_square",time:"dusk",duration:8},s=>{
+  s.place(host,[0,0,6]);s.place(guest,[3,0,6]);
+  s.spawn("kiosk",[-6,0,5],{color:"#cc835c"});
+  s.scatter("rock",{count:4,area:[12,16],seed:8});
+  s.row("lamp",{from:[-8,0,9],to:[8,0,9],count:3});
+  s.grid("flowers",{rows:2,cols:4,gap:1,pos:[-5,0,3]});
+  s.crowd({count:8,area:[16,12],seed:2,style:"kids"});
+  s.do(0,host,"welcome",{duration:2,lift:2.4});
+  s.cam(0,"two_shot",{targets:[host,guest]});
+  s.cam(3,"over_shoulder",{targets:[guest,host],dist:6,height:5.8});
+  s.cam(5,"orbit",{target:host,offset:[0,.4,0],fov:58});
+});
+```
+
 ## Camera distances
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 Defaults below assume a five-stud actor. Distances scale with body height. FOV is vertical degrees. Explicit `from` and `look` override automatic framing; collision checks still apply. Use `offset:[x,y,z]` to shift the lens in world coordinates.
 

@@ -21,6 +21,10 @@ function cameraPos(event, at, elapsed, ids) {
   if(shot==='crane_up'){height+=Math.min(18,elapsed*1.5);dist+=Math.min(12,elapsed);}
   if(shot==='two_shot'||shot==='group'){
     const actors=people.length?people.map(at):[subject];
+    if(actors.length===2){
+      const dx=actors[1].pos[0]-actors[0].pos[0],dz=actors[1].pos[2]-actors[0].pos[2];
+      if(Math.hypot(dx,dz)>.1){angle=Math.atan2(-dz,dx);if(Math.cos(angle-yaw)<0)angle+=Math.PI;}
+    }
     const points=actors.flatMap(a=>[a.pos,[a.pos[0],a.pos[1]+(a.height??5),a.pos[2]]]);
     const min=[0,1,2].map(i=>Math.min(...points.map(p=>p[i]))),max=min.map((_,i)=>Math.max(...points.map(p=>p[i])));
     center=min.map((v,i)=>(v+max[i])/2);look=[...center];height-=2.5;
@@ -54,9 +58,12 @@ export function avoidSolids(from,look,boxes,actors){
     if(Math.hypot(out[0]-pos[0],out[2]-pos[2])<1.9&&out[1]>pos[1]+low-.4)
       out[1]=Math.max(out[1],pos[1]+low+height+1);
   }
+  for(const {min,max} of boxes){
+    if(out.every((v,i)=>v>=min[i]-.15&&v<=max[i]+.15))out[1]=max[1]+.35;
+  }
   return out;
 }
-export function compileCamera(events, targetAt, shoutAt, ids=[], boxes=[]) {
+export function compileCamera(events, targetAt, shoutAt, ids=[], boxes=[], extras=[]) {
   const tracks = events.length && events[0].t===0 ? [...events] : [{t:0,shot:'wide',opts:{}},...events];
   for (let i=0;i<tracks.length;i++) {
     const event = tracks[i];
@@ -76,6 +83,6 @@ export function compileCamera(events, targetAt, shoutAt, ids=[], boxes=[]) {
     const i=Math.max(0,tracks.findLastIndex(shot=>shot.t<=time)), active=tracks[i];
     const {from,look,fov}=evaluate(time,i);
     const pulse=(active.opts.shake??0)*.13 + shoutAt(time)*.14;
-    return {fov,from:avoidSolids([from[0]+Math.sin(time*41)*pulse,from[1]+Math.cos(time*53)*pulse,from[2]],look,boxes,ids.map(id=>targetAt(id,time))),look:[...look],shot:active.shot};
+    return {fov,from:avoidSolids([from[0]+Math.sin(time*41)*pulse,from[1]+Math.cos(time*53)*pulse,from[2]],look,boxes,[...ids.map(id=>targetAt(id,time)),...extras]),look:[...look],shot:active.shot};
   };
 }

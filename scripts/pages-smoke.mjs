@@ -41,7 +41,7 @@ try {
   const panels = [
     ['Story Studio','story'], ['Location Preview','locations'], ['Character Preview','characters'],
     ['Shot Builder','builder'], ['Converter','converter'], ['Caption Writer','captions'],
-    ['Cheatsheet','cheatsheet'], ['Guide','guide'], ['Overview','home'],
+    ['Library','library'], ['Cheatsheet','cheatsheet'], ['Guide','guide'], ['Overview','home'],
   ];
   for (const [label,id] of panels) await check(label, async () => {
     const link = nav.getByRole('link', {name: label, exact: true});
@@ -51,8 +51,31 @@ try {
     assert.equal(new URL(page.url()).hash, '#'+id);
     if(id==='locations') await page.locator('#location-canvas[aria-label*="for scale"]').waitFor();
     if(id==='characters') await page.locator('#story-avatar[data-ready="true"]').waitFor();
+    if(id==='library') await page.locator('#lib-canvas[data-ready="tower"]').waitFor({timeout:15000});
     if(id==='guide') await page.locator('#manual h1').first().waitFor();
     if(id==='cheatsheet') await page.locator('#cheatsheet-copy:enabled').waitFor();
+  });
+  await check('Custom library item survives reload and round-trips through JSON and JavaScript', async () => {
+    await nav.getByRole('link',{name:'Library',exact:true}).tap();
+    const src='define.prop("ci_marker", b=>b.cone({pos:[0,1,0],scale:2,color:"#eb915c"}));';
+    await page.locator('#lib-source').fill(src);
+    await page.locator('#lib-save').tap();
+    await page.locator('#lib-canvas[data-ready="ci_marker"]').waitFor({timeout:15000});
+    await page.reload();
+    await page.locator('#lib-item option[value="ci_marker"]').waitFor({state:'attached'});
+    await page.locator('#lib-item').selectOption('ci_marker');
+    await page.locator('#lib-canvas[data-ready="ci_marker"]').waitFor();
+    for(const ext of ['json','js']){
+      const download=page.waitForEvent('download');await page.locator('#lib-'+ext).tap();
+      const file=await download, path=await file.path();
+      await page.locator('#lib-delete').tap();
+      await page.locator('#lib-item option[value="ci_marker"]').waitFor({state:'detached'});
+      const {readFile}=await import('node:fs/promises');
+      await page.locator('#lib-import').setInputFiles({name:file.suggestedFilename(),mimeType:'text/plain',buffer:await readFile(path)});
+      await page.locator('#lib-canvas[data-ready="ci_marker"]').waitFor({timeout:15000});
+    }
+    await page.locator('#lib-delete').tap();
+    await page.locator('#lib-item option[value="ci_marker"]').waitFor({state:'detached'});
   });
   await check('Sample story renders', async () => {
     await nav.getByRole('link',{name:'Story Studio',exact:true}).tap();

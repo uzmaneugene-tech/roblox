@@ -72,7 +72,11 @@ export function libraryAPI(command, base) {
           invoke(item,()=>item.fn(rig,duration*i/steps,opts??{}));
           command('keyframe',[parts.map(k=>{const r=rig[k].rotation;return vec(Array.isArray(r)?r:[r.x,r.y,r.z])})]);}
       };
-      return fn(new Proxy(extra,{get:(o,k)=>Object.hasOwn(o,k)?o[k]:s[k]}));
+      return fn(new Proxy(extra,{get:(o,k)=>{
+        if(Object.hasOwn(o,k))return o[k];
+        if(Object.hasOwn(s,k))return s[k];
+        fail('Unknown scene method: s.'+String(k)+'. Valid methods: '+[...new Set([...Object.keys(s),...Object.keys(o)])].join(', '));
+      }}));
     });
   };
   const originalCharacter=base.character;

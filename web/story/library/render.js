@@ -3,7 +3,7 @@ import {RoundedBoxGeometry} from '../vendor/rounded-box.js';
 
 // Build unit meshes once per scene; transforms and materials are shared by instances.
 export function buildLibrary(root,nodes,crowds,time){
-  const geo=new Map(), mats=new Map(), textures=[], batches=new Map(), parents=[], solids=[], updates=[];
+  const geo=new Map(), mats=new Map(), textures=[], batches=new Map(), parents=[], solids=[], actors=[], updates=[];
   const geometry=k=>{
     if(!geo.has(k)){
       let g;
@@ -71,9 +71,16 @@ export function buildLibrary(root,nodes,crowds,time){
       const parts=[[0,2.9,0,1.6,1.8,.8,shirt],[0,4.4,0,1.2,1.1,1.1,skin],[0,4.98,0,1.26,.38,1.16,'#312937'],
         ...[-1,1].flatMap(k=>[[k*1.04,2.95,0,.53,1.65,.65,shirt],[k*1.04,2.02,0,.52,.35,.63,skin],[k*.42,1,0,.75,2,.74,pants],[k*.42,.22,.11,.8,.4,.9,'#dddcd6'],[k*.22,4.52,.56,.11,.19,.035,'#231e27']])];
       const rot=new T.Object3D(),small=new T.Object3D();
+      const pose={pos:[x,0,z],height:5.4*size,low:0};actors.push(pose);
+      const poseAt=t=>{const a=t*.32+phase,u=walk?Math.sin(a)*1.6:0;
+        rot.position.set(x+u*Math.sin(angle),size*.04*Math.sin(phase+t*3),z+u*Math.cos(angle));
+        rot.rotation.y=angle+(walk?(1-Math.tanh(4*Math.cos(a)))*Math.PI/2:0);
+        rot.scale.setScalar(size);rot.updateMatrix();rot.position.toArray(pose.pos);
+      };
+      poseAt(0);updates.push(poseAt);
       for(const [dx,dy,dz,w,h,d,color] of parts){
         small.position.set(dx,dy,dz);small.scale.set(w,h,d);small.updateMatrix();const local=small.matrix.clone();
-        const animate=(t,out)=>{const a=t*.32+phase,u=walk?Math.sin(a)*1.6:0;rot.position.set(x+u*Math.sin(angle),size*.04*Math.sin(phase+t*3),z+u*Math.cos(angle));rot.rotation.y=angle+(walk?(1-Math.tanh(4*Math.cos(a)))*Math.PI/2:0);rot.scale.setScalar(size);rot.updateMatrix();return out.multiplyMatrices(rot.matrix,local);};
+        const animate=(_,out)=>out.multiplyMatrices(rot.matrix,local);
         put(geometry('box'),mat({color}),animate(0,new T.Matrix4()),animate);
       }
       bounds.expandByPoint(new T.Vector3(x,5,z));
@@ -87,5 +94,5 @@ export function buildLibrary(root,nodes,crowds,time){
       updates.push(t=>{for(const [i,fn] of moving){fn(t,temp);mesh.setMatrixAt(i,temp);}mesh.instanceMatrix.needsUpdate=true;});}
   }
   for(const b of boundaries.values())solids.push({min:b.min.toArray(),max:b.max.toArray()});
-  return {bounds,solids,update:t=>updates.forEach(f=>f(t)),dispose(){meshes.forEach(m=>m.dispose());geo.forEach(g=>g.dispose());mats.forEach(m=>m.dispose());textures.forEach(m=>{m.geometry.dispose();m.material.map.dispose();m.material.dispose();});}};
+  return {bounds,solids,actors,update:t=>updates.forEach(f=>f(t)),dispose(){meshes.forEach(m=>m.dispose());geo.forEach(g=>g.dispose());mats.forEach(m=>m.dispose());textures.forEach(m=>{m.geometry.dispose();m.material.map.dispose();m.material.dispose();});}};
 }
