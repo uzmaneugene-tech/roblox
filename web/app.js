@@ -11,10 +11,20 @@ function route(){
  const pages=['home','builder','converter','guide','captions'];let page=location.hash.slice(1);if(!pages.includes(page))page='home';
  for(const p of pages)$(p).hidden=p!==page;
  document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('active',a.hash==='#'+page));
- if(page==='builder'&&!previewStarted){previewStarted=true;import('./preview.js').then(m=>{renderPreview=m.monitor($('canvas'));preview()}).catch(()=>{$('preview-info').textContent='3D preview needs WebGL. Editing and export still work.'})}
+ if(page==='builder'&&!previewStarted){previewStarted=true;import('./preview.js').then(m=>{renderPreview=m.monitor($('canvas'));preview()}).catch(()=>{$('preview-info').textContent='3D preview unavailable. Check your connection and browser; editing and export still work.'})}
  window.scrollTo(0,0);
 }
-fetch('/guide-content').then(r=>{if(!r.ok)throw Error();return r.text()}).then(html=>$('manual').innerHTML=html).catch(()=>$('manual').textContent='Guide unavailable. Open docs/guide.md in the repository.');
+async function loadGuide(){
+ try{
+  const script=el('script');script.src='https://cdn.jsdelivr.net/npm/markdown-it@14.1.0/dist/markdown-it.min.js';
+  const ready=new Promise((resolve,reject)=>{script.onload=resolve;script.onerror=reject});document.head.append(script);
+  const [texts]=await Promise.all([Promise.all(['guide','troubleshooting'].map(async name=>{const response=await fetch('./docs/'+name+'.md');if(!response.ok)throw Error('Guide unavailable');return response.text()})),ready]);
+  const md=window.markdownit({html:false});$('manual').innerHTML=texts.map(text=>md.render(text.replace(/<!--[\s\S]*?-->/g,''))).join('');
+  // Markdown asset links are relative to the published documentation folder.
+  $('manual').querySelectorAll('a[href],img[src]').forEach(node=>{const attr=node.tagName==='A'?'href':'src',value=node.getAttribute(attr);if(value&&!/^(?:[a-z][a-z0-9+.-]*:|\/\/|#|\/)/i.test(value))node.setAttribute(attr,new URL(value,new URL('./docs/',document.baseURI)).href)});
+ }catch{$('manual').textContent='Guide unavailable. Check your connection or open docs/guide.md in the repository.'}
+}
+loadGuide();
 function preview(){const s=model.shots[index];if(renderPreview&&[...s.rotation,...s.position,s.fov].every(Number.isFinite))renderPreview(s)}
 function list(){const host=$('shot-list');host.replaceChildren();model.shots.forEach((s,i)=>{const btn=el('button');btn.textContent=String(i+1).padStart(2,'0')+' / '+s.name;btn.classList.toggle('selected',index===i);btn.onclick=()=>{index=i;draw()};host.append(btn)})}
 let revision=0;
@@ -58,7 +68,7 @@ function results(host,files){
  for(const label of ['Copy Luau','Download .lua']){const btn=el('button');btn.textContent=label;actions.append(btn);btn.onclick=async()=>{const name=select.value;try{if(label.startsWith('Copy')){if(globalThis.ClipboardItem&&navigator.clipboard.write){await navigator.clipboard.write([new ClipboardItem({'text/plain':files[name]})])}else{await navigator.clipboard.writeText(await files[name].text())}notice('Copied '+name)}else download(files[name],name)}catch{notice('Clipboard unavailable. Use Download .lua.')}}}
 }
 function generate(where,payload){
- const btn=$(where==='builder'?'generate':'convert'),host=$(where+'-result'),rev=revision,w=new Worker('/worker.js',{type:'module'});
+ const btn=$(where==='builder'?'generate':'convert'),host=$(where+'-result'),rev=revision,w=new Worker(new URL('./worker.js',import.meta.url),{type:'module'});
  btn.disabled=true;host.textContent='Generating modules…';
  const done=()=>{btn.disabled=false;w.terminate()};
  w.onerror=()=>{done();host.textContent='Conversion failed. Try a smaller file.'};

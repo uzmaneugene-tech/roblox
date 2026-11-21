@@ -1,6 +1,4 @@
-// The CDN is preferred; the identical npm version is served locally if it is offline.
-let T;
-try{T=await Promise.race([import('https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js'),new Promise((_,reject)=>setTimeout(()=>reject(Error('Network timeout')),3500))])}catch{T=await import('/three/three.module.js')}
+import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 export function monitor(canvas){
   let renderer;
   if(canvas.getContext('webgl2',{antialias:true})){
