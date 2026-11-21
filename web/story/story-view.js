@@ -165,6 +165,8 @@ export function createStoryView(canvas, caption, fixedSize) {
       pivot.position.set(frame.pos[0],frame.pos[1]+frame.low,frame.pos[2]);
       pivot.rotation.set(0,frame.yaw,0);
       model.group.rotation.x=frame.root;
+      const center=frame.center*model.group.scale.y;
+      model.group.position.set(0,center*(1-Math.cos(frame.root)),-center*Math.sin(frame.root));
       for(const [part,rot] of Object.entries(frame.rot))model.parts[part].rotation.set(...rot);
       model.parts.torso.scale.y=frame.breath;
       const beat=faceBeat(id,t,current.captions,frame.face);

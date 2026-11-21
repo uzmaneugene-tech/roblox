@@ -68,7 +68,7 @@ function sample(segment, absolute) {
   }
   // Blend every pivot and root offset from the pose already visible at the event boundary.
   for(const p of parts) rot[p]=rot[p].map((v,i)=>mix(from.rot[p][i],v,blend));
-  return {pos,yaw:direction,breath:1+.009*Math.sin(absolute*2.2),root:mix(from.root,root,blend),low:mix(from.low,low,blend),rot,face,ball};
+  return {pos,yaw:direction,center:mix(from.center??0,action==='backflip'?2.56:0,blend),breath:1+.009*Math.sin(absolute*2.2),root:mix(from.root,root,blend),low:mix(from.low,low,blend),rot,face,ball};
 }
 
 export function compileMotion(placement, events, hoops = [], placements = new Map()) {

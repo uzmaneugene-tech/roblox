@@ -46,3 +46,11 @@ test('held items can be sought across the handoff',()=>{
   assert.equal(lookup('next',2.54),'cup');
   assert.equal(lookup('first',2.54),null);
 });
+
+import {compileMotion} from '../web/story/motion.js';
+test('backflip rotates around the raised body center at the apex',()=>{
+  const at=compileMotion([0,0,0],[{action:'backflip',t:0}]);
+  const {root,center,low}=at(.525);
+  assert.ok(Math.abs(root+Math.PI)<.0001);
+  assert.ok(low+center*(1-Math.cos(root))+5.2*Math.cos(root)>1);
+});
