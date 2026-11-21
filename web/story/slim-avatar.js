@@ -28,7 +28,7 @@ export function decal(draw, w, h, z) {
 }
 
 const PI = Math.PI;
-function drawFace(x, name) {
+function drawFace(x, name, mouth=0, blink=false) {
   x.lineCap = 'round'; x.lineWidth = 13; x.strokeStyle = x.fillStyle = '#111';
   const eye = (cx, cy, rx, ry) => {
     x.fillStyle = '#111'; x.beginPath(); x.ellipse(cx, cy, rx, ry, 0, 0, 7); x.fill();
@@ -47,6 +47,16 @@ function drawFace(x, name) {
   if (name === 'shouting') { arc(88, 124, 17, 1.1 * PI, 1.9 * PI); arc(168, 124, 17, 1.1 * PI, 1.9 * PI);
     x.beginPath(); x.ellipse(128, 188, 36, 40, 0, 0, 7); x.fill();
     x.fillStyle = '#e8625a'; x.beginPath(); x.ellipse(128, 206, 22, 14, 0, 0, 7); x.fill(); }
+  if(mouth){
+    x.clearRect(65,151,126,105);x.fillStyle='#381e28';x.beginPath();
+    x.ellipse(128,186,20+mouth*3,6+mouth*6,0,0,2*PI);x.fill();
+    x.fillStyle='#e78177';x.beginPath();x.ellipse(128,190+mouth*3,10+mouth*2,3+mouth,0,0,2*PI);x.fill();
+  }
+  if(blink){
+    x.clearRect(45,99,166,53);
+    if(name==='happy'||name==='shocked')x.clearRect(45,70,166,31);
+    x.strokeStyle='#111';x.lineWidth=11;line(72,115,102,115);line(154,115,184,115);
+  }
 }
 
 export function makeAvatar(o = {}, P = SLIM) {
@@ -93,14 +103,15 @@ export function makeAvatar(o = {}, P = SLIM) {
   head.add(part(hw, hh, hd, C.skin, P));
   const faceMesh = decal(x => drawFace(x, 'happy'), hw * .86, hh * .86, hd / 2 + .012);
   head.add(faceMesh);
-  let face = 'happy';
-  const setFace = (name) => {
-    if (face === name) return;
-    face = name;
+  let face = 'happy:0:false';
+  const setFace = (name,mouth=0,blink=false) => {
+    const key=name+':'+mouth+':'+blink;
+    if (face === key) return;
+    face = key;
     const texture = faceMesh.material.map;
     const ctx = texture.image.getContext('2d');
     ctx.clearRect(0, 0, 256, 256);
-    drawFace(ctx, name);
+    drawFace(ctx,name,mouth,blink);
     texture.needsUpdate = true;
   };
   const hairStart=head.children.length;

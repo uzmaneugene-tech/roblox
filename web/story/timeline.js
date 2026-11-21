@@ -166,6 +166,8 @@ export function recorder() {
     narrate(t, caption, opts = {}) {
       captionLine(t, caption, opts);
     },
+    grade(value){current.grade=choice(value,'grade',['neutral','warm_dusk','cold_night','bright_day']);},
+    dof(opts){object(opts,'dof',['focus','amount']);current.dof={focus:handle(opts.focus),amount:number(opts.amount??.3,'focus amount',0,1)};},
     light(opts) {
       object(opts, 'light()', ['color', 'intensity', 'ambient']);
       if (opts.color !== undefined) text(opts.color, 'Light color', 80);
