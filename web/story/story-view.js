@@ -1,3 +1,4 @@
+import {styleHeight} from './styles.js';
 import {sceneEffects,timeWeights,frameEffects} from './story-effects.js';
 import {compileItems} from './action-poses.js';
 import {heldProp} from './held-props.js';
@@ -114,7 +115,7 @@ export function createStoryView(canvas, caption, fixedSize) {
     }
     const targetAt=(id,t)=> {
       const frame=(tracks.get(id)??tracks.values().next().value)?.(t);
-      if(frame)return {...frame,height:5*(bodyScale[timeline.characters.find(c=>c.id===id)?.body??'slim'][1])};
+      if(frame)return {...frame,height:(5/5.2)*styleHeight(timeline.characters.find(c=>c.id===id)?.style)*(bodyScale[timeline.characters.find(c=>c.id===id)?.body??'slim'][1])};
       return {pos:[layout.focus[0],0,layout.focus[2]],yaw:0,low:0};
     };
     const shouts=data.actions.filter(e=>e.action==='shout');
@@ -168,7 +169,7 @@ export function createStoryView(canvas, caption, fixedSize) {
       const center=frame.center*model.group.scale.y;
       model.group.position.set(0,center*(1-Math.cos(frame.root)),-center*Math.sin(frame.root));
       for(const [part,rot] of Object.entries(frame.rot))model.parts[part].rotation.set(...rot);
-      model.parts.torso.scale.y=frame.breath;
+      model.parts.torso.scale.y=model.torsoScale*frame.breath;
       const beat=faceBeat(id,t,current.captions,frame.face);
       model.setFace(frame.face,beat.mouth,beat.blink);
       characters.push({id,name:timeline.characters.find(c=>c.id===id).name,position:pivot.position.toArray(),action:current.actions.findLast(e=>e.char===id&&e.t<=t)?.action??'idle',face:frame.face,...beat});
@@ -176,9 +177,9 @@ export function createStoryView(canvas, caption, fixedSize) {
       if(held){
         const key=id+':'+held;
         if(!stage.items.has(key)){const group=heldProp(held);stage.items.set(key,group);stage.live.add(group);stage.owned.push(group);}
-        const group=stage.items.get(key),hand=model.parts.armR;
+        const group=stage.items.get(key),hand=model.parts.elbowR.parent?model.parts.elbowR:model.parts.armR;
         group.visible=true;
-        group.position.copy(hand.localToWorld(new T.Vector3(0,-1.75,.31)));
+        group.position.copy(hand.localToWorld(new T.Vector3(0,hand===model.parts.armR?-1.75:-.85,.31)));
         hand.getWorldQuaternion(group.quaternion);group.rotateX(Math.PI);
       }
       baseShadow.position.set(frame.pos[0],frame.pos[1],frame.pos[2]);
@@ -250,6 +251,16 @@ export function createStoryView(canvas, caption, fixedSize) {
   resize?.observe(output);
   return {
     setTimeline(data) { override=null;debug=null;auto='High';settings={...settings,...data.lookSettings};clear(); current=null;timeline=data;lastTime=0;if(!fixedSize)render(0); },
+    inspect(){
+      const box=new T.Box3(),temp=new T.Box3(),matrix=new T.Matrix4();let meshes=0,lights=0;
+      stage.root.updateMatrixWorld(true);stage.root.traverseVisible(n=>{
+        if(n.isLight)lights++;if(!n.isMesh||n===stage.contacts||n.userData.shadow||n.material.side===T.BackSide)return;
+        n.geometry.computeBoundingBox();for(let i=0;i<(n.isInstancedMesh?n.count:1);i++){
+          if(n.isInstancedMesh){n.getMatrixAt(i,matrix);matrix.premultiply(n.matrixWorld);}else matrix.copy(n.matrixWorld);
+          box.union(temp.copy(n.geometry.boundingBox).applyMatrix4(matrix));meshes++;
+        }
+      });if(box.isEmpty())box.set(new T.Vector3(),new T.Vector3());return [{min:box.min.toArray(),max:box.max.toArray()},meshes,lights];
+    },
     render,debug:()=>debug,lookSettings:()=>({...settings,quality:effective()}),
     configure(options){settings={...settings,...options};auto='High';slow=0;render(lastTime);},
     camera(view){override=view;render(lastTime);},

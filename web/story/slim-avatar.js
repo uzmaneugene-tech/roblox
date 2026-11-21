@@ -66,10 +66,15 @@ export function makeAvatar(o = {}, P = SLIM) {
   const [hw, hh, hd] = P.head, [tw, th, td] = P.torso, [aw, ah, ad] = P.arm, [lw, lh, ld] = P.leg;
   const root = new THREE.Group();
 
+  const joints={};
+  const joint=(p,k,y)=>{const g=new THREE.Group();joints[k]=g;if(o.segmented){g.position.y=y;p.add(g);}return g;};
   const mkLeg = (side) => {
     const p = new THREE.Group(); p.position.set(side * (lw / 2 + P.gap / 2), lh, 0);
-    const leg = part(lw, lh, ld, C.pants, P); leg.position.y = -lh / 2; p.add(leg);
-    const shoe = part(lw + .08, .42, ld + .3, C.shoes, P); shoe.position.set(0, -lh + .21, .12); p.add(shoe);
+    const knee=joint(p,'knee'+(side<0?'L':'R'),-1);
+    const len=o.segmented?.98:lh;
+    const leg = part(lw,len,ld,C.pants,P);leg.position.y=-len/2;p.add(leg);
+    if(o.segmented){const shin=part(lw*.92,.92,ld*.94,C.pants,P);shin.position.y=-.47;knee.add(shin);const cap=part(lw*.8,.24,ld*.8,C.pants,P);knee.add(cap);}
+    const shoe = part(lw + .08, .42, ld + .3, C.shoes, P); shoe.position.set(0, -lh + .21, .12); if(o.segmented){shoe.position.y+=1;knee.add(shoe);}else p.add(shoe);
     if (C.patches) {
       const patch = decal(x => { x.fillStyle = '#3b4a86'; x.fillRect(70, 90, 110, 100);
         x.strokeStyle = '#0d1230'; x.lineWidth = 6; x.setLineDash([12, 10]); x.strokeRect(70, 90, 110, 100); },
@@ -82,7 +87,7 @@ export function makeAvatar(o = {}, P = SLIM) {
   const legL = mkLeg(-1), legR = mkLeg(1);
 
   const torso = new THREE.Group(); torso.position.y = lh + th / 2; root.add(torso);
-  torso.add(part(tw, th, td, C.shirt, P));
+  if(o.segmented){const chest=part(tw,1.42,td,C.shirt,P);chest.position.y=.29;const waist=part(tw*.92,.57,td*.94,C.shirt,P);waist.position.y=-.715;torso.add(chest,waist);}else torso.add(part(tw, th, td, C.shirt, P));
   torso.add(decal(x => {
     if (C.collar) { x.fillStyle = '#fff'; x.strokeStyle = '#111'; x.lineWidth = 5;
       [[[78, 0], [128, 0], [128, 62]], [[178, 0], [128, 0], [128, 62]]].forEach(t => {
@@ -94,8 +99,11 @@ export function makeAvatar(o = {}, P = SLIM) {
 
   const mkArm = (side) => {
     const p = new THREE.Group(); p.position.set(side * (tw / 2 + aw / 2 + P.gap), lh + th - .1, 0);
-    const arm = part(aw, ah, ad, C.shirt, P); arm.position.y = -ah / 2 + .1; p.add(arm);
-    const hand = part(aw + .02, .55, ad + .02, C.skin, P); hand.position.y = -ah + .1 + .275; p.add(hand);
+    const elbow=joint(p,'elbow'+(side<0?'L':'R'),-.9);
+    const length=o.segmented?.98:o.classic?ah-.32:ah;
+    const arm=part(aw,length,ad,C.shirt,P);arm.position.y=-length/2+.1;p.add(arm);
+    if(o.segmented){const lower=part(aw*.94,.66,ad*.94,C.shirt,P);lower.position.y=-.32;elbow.add(lower);elbow.add(part(aw*.8,.23,ad*.8,C.shirt,P));}
+    const hand = part(aw + .02, .55, ad + .02, C.skin, P); hand.position.y = -ah + .1 + .275; if(o.segmented){hand.position.y+=.9;elbow.add(hand);}else if(o.classic){hand.scale.set(aw/(aw+.02),.32/.55,ad/(ad+.02));hand.position.y=-ah+.26;p.add(hand);}else p.add(hand);
     root.add(p); return p;
   };
   const armL = mkArm(-1), armR = mkArm(1);
@@ -128,5 +136,5 @@ export function makeAvatar(o = {}, P = SLIM) {
   });
 
   root.traverse(n => { if (n.isMesh) n.castShadow = true; });
-  return { group: root, hairPieces:head.children.slice(hairStart), parts: { head, torso, armL, armR, legL, legR }, setFace };
+  return { group: root, hairPieces:head.children.slice(hairStart), parts: { head, torso, armL, armR, legL, legR,...joints }, setFace };
 }

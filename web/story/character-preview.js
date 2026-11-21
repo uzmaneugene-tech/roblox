@@ -1,3 +1,4 @@
+import {styleLineup} from './lineup.js';
 import { expressions } from './registry.js';
 
 const defaultCharacter = {id:'jin',name:'Jin',outfit:{}};
@@ -11,6 +12,7 @@ export function setPreviewCharacters(characters) {
 
 export async function startCharacterPreview() {
   const { createAvatarView } = await import('./avatar-view.js');
+  styleLineup();
   const canvas = document.getElementById('story-avatar');
   const view = createAvatarView(canvas);
   const character = document.getElementById('story-character');

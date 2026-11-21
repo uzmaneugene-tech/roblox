@@ -5,7 +5,7 @@ export const smooth = x => { const p = clamp(x); return p*p*(3-2*p); };
 export const angleMix = (a,b,q) => a + Math.atan2(Math.sin(b-a),Math.cos(b-a))*q;
 const distance = (a,b) => Math.hypot(b[0]-a[0],b[2]-a[2]);
 const heading = (a,b,otherwise) => distance(a,b) > .001 ? Math.atan2(b[0]-a[0],b[2]-a[2]) : otherwise;
-const parts = ['head','torso','armL','armR','legL','legR'];
+const parts = ['head','torso','armL','armR','legL','legR','elbowL','elbowR','kneeL','kneeR'];
 const baseRot = () => Object.fromEntries(parts.map(p=>[p,[0,0,0]]));
 const durations = { wave:1.45,jump:1.08,shout:1.48,shoot_ball:1.65,celebrate:1.68,fall:.95,turn_to:.62,sit:.66,emote:.3 };
 
@@ -29,7 +29,7 @@ function sample(segment, absolute) {
   }
   if(segment.frames){
     const f=q*(segment.frames.length-1),a=Math.floor(f),b=Math.ceil(f);
-    parts.forEach((k,i)=>{rot[k]=segment.frames[a][i].map((v,j)=>mix(v,segment.frames[b][i][j],f-a));});
+    parts.forEach((k,i)=>{if(segment.frames[a][i])rot[k]=segment.frames[a][i].map((v,j)=>mix(v,segment.frames[b][i][j],f-a));});
   }
   const impulse = smooth(t/.21)*smooth((duration-t)/.28);
   if(action==='wave') {
@@ -65,6 +65,10 @@ function sample(segment, absolute) {
     const extra=extraPose(action,arg,t,smooth(q),impulse,rot);
     low=extra.low;root=extra.root;face=extra.face??face;
     pos[0]+=Math.sin(direction)*extra.forward;pos[2]+=Math.cos(direction)*extra.forward;
+  }
+  if(!segment.frames)for(const side of ['L','R']){
+    rot['elbow'+side][0]=-Math.min(1.15,Math.abs(rot['arm'+side][0])*.55+Math.abs(rot['arm'+side][2])*.19);
+    rot['knee'+side][0]=Math.min(1.45,Math.max(0,-rot['leg'+side][0])*1.07);
   }
   // Blend every pivot and root offset from the pose already visible at the event boundary.
   for(const p of parts) rot[p]=rot[p].map((v,i)=>mix(from.rot[p][i],v,blend));

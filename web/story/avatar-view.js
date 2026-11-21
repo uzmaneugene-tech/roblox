@@ -1,3 +1,4 @@
+import {fitStyle,styleHeight,silhouettes} from './styles.js';
 import * as T from './vendor/three.module.min.js';
 import { decal, makeAvatar, part, SLIM } from './slim-avatar.js';
 import { softwarePreview } from './software-preview.js';
@@ -36,7 +37,7 @@ function hairColor(value) {
 export function buildAvatar(spec) {
   const outfit = spec.outfit ?? {};
   const options = {
-    skin: color(spec.skin, undefined),
+    segmented:spec.style==='r15',classic:spec.style==='classic',skin: color(spec.skin, undefined),
     shirt: color(outfit.shirt, undefined),
     pants: color(outfit.pants, undefined),
     shoes: color(outfit.shoes, undefined),
@@ -92,7 +93,7 @@ export function buildAvatar(spec) {
     text.position.y = -.21;
     torso.add(text);
   }
-  return model;
+  fitStyle(model,spec.style);return model;
 }
 
 function dispose(root) {
@@ -158,7 +159,7 @@ export function createAvatarView(canvas, { closeUp = false } = {}) {
     if (renderer) renderer.render(scene, camera);
     else paint(scene, camera);
   }
-  function show(spec, angle, expression) {
+  function show(spec, angle, expression,pose,sharedScale=false) {
     if (spec !== model) {
       if (current) {
         scene.remove(current.group);
@@ -169,12 +170,17 @@ export function createAvatarView(canvas, { closeUp = false } = {}) {
       if (current) scene.add(current.group);
     }
     current?.setFace(expression);
+    if(current)for(const [key,part] of Object.entries(current.parts))part.rotation.fromArray(pose?.rot[key]??[0,0,0]);
+    if(current)current.group.position.y=pose?.low??0;
+    if(closeUp&&current)focus.y=current.parts.head.position.y*current.group.scale.y+.12;
+
     if (!closeUp) focus.y = spec?.outfit?.hat?.toLowerCase().includes('party') ? 3.24 : 2.92;
+    if(!closeUp&&sharedScale)focus.y=3.48;
     camera.position.fromArray(angles[angle] ?? angles['three-quarter']).normalize().multiplyScalar(12).add(focus);
     camera.lookAt(focus);
     render();
   }
-  new ResizeObserver(render).observe(canvas);
+  const resize=new ResizeObserver(render);resize.observe(canvas);
   show(null, 'three-quarter', 'happy');
-  return { show };
+  return {show,dispose(){resize.disconnect();dispose(scene);renderer?.dispose();renderer?.forceContextLoss();}};
 }
